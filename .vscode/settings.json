@@ -1,0 +1,20 @@
+{
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.codeActionsOnSave": {
+    "source.fixAll": "explicit"
+  },
+  "eslint.useFlatConfig": true,
+  // "editor.tabSize": 2,
+  // "editor.insertSpaces": true,
+  // "editor.detectIndentation": false,
+  // "prettier.singleQuote": false,
+  // "prettier.jsxSingleQuote": false,
+  // "javascript.preferences.quoteStyle": "auto",
+  // "yaml.format.singleQuote": false,
+  // "docker.languageserver.diagnostics.instructionJSONInSingleQuotes": "warning",
+  // "html.completion.attributeDefaultValue": "doublequotes"
+  "code-runner.executorMap": {
+    "typescript": "ts-node --esm"
+  }
+}

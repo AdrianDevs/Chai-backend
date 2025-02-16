@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mini Message Board</title>
+    <link rel="stylesheet" href="/stylesheets/style.css" />
+  </head>
+  <body>
+    <%- include('navbar') %>
+    <header>
+      <h1>Welcome to the Mini Message Board</h1>
+    </header>
+    <main>
+      <section>
+        <% if (locals.user) {%>
+          <p>Welcom back 
+            <strong><%= user.username %></strong>
+          </p>
+          <a href="user/logout">Logout</a>
+        <% } else { %>
+          <p>You should not be here.</p>
+        <% } %>
+      </section>
+      <section>
+        <h2>Messages</h2>
+        <% if (locals.messages && messages.length > 0) { %>
+          <ul>
+            <% messages.forEach(function(message) { %>
+              <li>
+                <strong><%= message.user_name %></strong>
+              <br>
+              <small><%= message.created_at.toDateString() %></small>
+                <br>
+                <%= message.message %>
+              </li>
+            <% }); %>
+          </ul>
+        <% } else { %>
+          <p>No messages yet.</p>
+        <% } %>
+        
+      </section>
+      <section>
+        <h2>Add a new message</h2>
+        <%- include("errors.ejs") %>
+        <form action="/messages" method="post">
+          <div>
+            <label for="user">Name:</label>
+            <input placeholder="John Doe" type="text" id="user" name="user" required />
+          </div>
+          <div>
+            <label for="text">Message:</label>
+            <textarea placeholder="Hi!" id="text" name="text" required></textarea>
+          </div>
+          <button type="submit">Send</button>
+        </form>
+      </section>
+    </main>
+  </body>
+</html>

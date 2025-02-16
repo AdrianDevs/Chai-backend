@@ -1,0 +1,17 @@
+services:
+  web:
+    container_name: chai-web
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: prod
+    environment:
+      POSTGRES_HOST: postgres
+    ports:
+      - '8080:8080'
+    networks:
+      - internal
+    depends_on:
+      db:
+        condition: service_healthy
+    command: node dist/index.js

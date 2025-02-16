@@ -1,0 +1,14 @@
+.git
+.gitignore
+.env
+.dockerignore
+.lefthook
+.vscode
+Dockerfile
+docker-compose.yml
+lefthook.yml
+node_modules
+npm-debug.log
+dist/
+build/
+README.md
