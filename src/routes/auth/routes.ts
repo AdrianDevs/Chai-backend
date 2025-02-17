@@ -10,10 +10,7 @@ const controller = createController(service);
 
 router.use(contextLoggingMiddleware('[user]'));
 
-router.get('/signup', controller.showSignup);
-router.post('/signup', ...controller.signup);
-router.get('/login', controller.showLogin);
+router.post('/signup', controller.signup);
 router.post('/login', controller.login);
-router.get('/logout', controller.logout);
 
 export default router;

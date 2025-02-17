@@ -1,6 +1,7 @@
 export enum ErrorType {
   UNAUTHORIZED = 'UnauthorizedError',
   MESSAGE_NOT_FOUND = 'MessageNotFoundError',
+  MESSAGE_INVALID = 'MessageInvalidError',
   USER_NOT_FOUND = 'UserNotFoundError',
   UNKNOWN = 'UnknownError',
 }

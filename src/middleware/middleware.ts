@@ -1,4 +1,3 @@
-import { links } from '@/data';
 import { CustomError, ErrorType } from '@/errors';
 import { Request, Response, NextFunction } from 'express';
 
@@ -41,11 +40,7 @@ export const handleUnauthorizedError = async (
   next: NextFunction
 ) => {
   if (err.statusCode === 401 && err.type === ErrorType.UNAUTHORIZED) {
-    // res.status(401).send('Please log in');
-    res.status(err.statusCode).render('error-page', {
-      links: links,
-      errors: [{ status: err.statusCode, msg: 'Please log in' }],
-    });
+    res.status(err.statusCode).json({ message: err.message });
   } else {
     next(err);
   }

@@ -5,8 +5,9 @@
     "baseUrl": "./src",
     "paths": {
       "@/*": ["*"],
-      "@users/*": ["users/*"],
-      "@messages/*": ["messages/*"],
+      "@routes/*": ["routes/*"],
+      "@auth/*": ["routes/auth/*"],
+      "@messages/*": ["routes/messages/*"],
       "@database/*": ["database/*"]
     },
     "outDir": "./dist",

@@ -10,6 +10,7 @@ export interface UserTable {
   id: Generated<number>;
   username: string;
   password: string;
+  salt: string;
   created_at: ColumnType<Date, string | undefined, never>;
 }
 

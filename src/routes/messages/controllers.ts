@@ -1,9 +1,8 @@
 import { Request, Response } from 'express';
-import { body, validationResult } from 'express-validator';
 import asyncHandler from 'express-async-handler';
-import { links } from '@/data';
 import { Message, MessageUpdate, NewMessage } from '@/database/types/message';
 import { CustomError, ErrorType } from '@/errors';
+import { body, validationResult } from 'express-validator';
 
 export interface ServiceInterface {
   getMessages: () => Promise<Message[]>;
@@ -23,10 +22,7 @@ class Controller {
 
   public getMessages = asyncHandler(async (req: Request, res: Response) => {
     const messages = await this.service.getMessages();
-    res.render('messages', {
-      links: links,
-      messages: messages,
-    });
+    res.json(messages);
   });
 
   public getMessageById = asyncHandler(async (req: Request, res: Response) => {
@@ -63,12 +59,7 @@ class Controller {
     asyncHandler(async (req: Request, res: Response) => {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
-        const messages = await this.service.getMessages();
-        return res.status(400).render('messages', {
-          links: links,
-          messages: messages,
-          errors: errors.array(),
-        });
+        res.status(400).json({ errors: errors.array() });
       }
 
       const { text } = req.body;

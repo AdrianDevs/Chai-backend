@@ -12,9 +12,9 @@ export default {
   },
   resolve: {
     alias: {
-      '@': resolve(__dirname, './src'),
-      '@users': resolve(__dirname, './src/users'),
-      '@messages': resolve(__dirname, './src/messages'),
+      '@': resolve(__dirname, '/src'),
+      '@auth': resolve(__dirname, './src/routes/auth'),
+      '@messages': resolve(__dirname, './src/routes/messages'),
       '@database': resolve(__dirname, './src/database'),
     },
   },
