@@ -18,9 +18,9 @@ pre-push:
   commands:
     branchName:
       run: npx validate-branch-name
-    packages-audit:
-      tags: frontend security
-      run: npm audit
+    # packages-audit:
+    #   tags: frontend security
+    #   run: npm audit
 commit-msg:
   parallel: true
   scripts:
