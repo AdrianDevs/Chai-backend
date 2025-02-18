@@ -2,6 +2,7 @@
 import dotenv from 'dotenv';
 import path from 'node:path';
 import express from 'express';
+import cors from 'cors';
 import morgan from 'morgan';
 import {
   handleUnauthorizedError,
@@ -21,6 +22,12 @@ console.log('Environment: ', process.env.NODE_ENV);
 const app = express();
 const port = process.env.PORT || 8080;
 
+const corsOptions = {
+  origin: process.env.CORS_ORIGIN,
+  optionsSuccessStatus: 200,
+};
+app.use(cors(corsOptions));
+
 const service = createService(store);
 const strategy = jwtStrategy(service);
 passport.use(strategy);
@@ -28,7 +35,6 @@ passport.use(strategy);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan('dev'));
-// TODO setup CORS
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use(routes);
