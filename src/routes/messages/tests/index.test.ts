@@ -47,7 +47,7 @@ describe('GET /messages', () => {
 
   it('should be able to view messages if logged in', async () => {
     let response = await request(app).post('/auth/signup').send({
-      username: 'test',
+      username: 'test-message-user',
       password: 'password',
     });
 
@@ -59,7 +59,7 @@ describe('GET /messages', () => {
     expect(response.statusCode).toBe(201);
     expect(response.body.id).toBeDefined();
     expect(response.body.id).toBeTypeOf('number');
-    expect(response.body.username).toEqual('test');
+    expect(response.body.username).toEqual('test-message-user');
     expect(response.body.token).toBeDefined();
     expect(response.body.expiresIn).toBeDefined();
     userID = response.body.id;

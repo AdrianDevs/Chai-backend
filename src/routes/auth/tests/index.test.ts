@@ -37,7 +37,7 @@ describe('POST /auth/signup', () => {
   it('should be able to signup a new user.', async () => {
     // runs concurrently with other tests
     const response = await request(app).post('/auth/signup').send({
-      username: 'test',
+      username: 'test-auth-1',
       password: 'password',
     });
 
@@ -49,14 +49,14 @@ describe('POST /auth/signup', () => {
     expect(response.statusCode).toBe(201);
     expect(response.body.id).toBeDefined();
     expect(response.body.id).toBeTypeOf('number');
-    expect(response.body.username).toEqual('test');
+    expect(response.body.username).toEqual('test-auth-1');
 
     userID = response.body.id;
   });
 
   it('should not be able to signup two users with the same username', async () => {
     let response = await request(app).post('/auth/signup').send({
-      username: 'test',
+      username: 'test-auth-2',
       password: 'password',
     });
 
@@ -71,7 +71,7 @@ describe('POST /auth/signup', () => {
     userID = response.body.id;
 
     response = await request(app).post('/auth/signup').send({
-      username: 'test',
+      username: 'test-auth-2',
       password: 'password',
     });
 
@@ -85,7 +85,7 @@ describe('POST /auth/signup', () => {
 
   it('should be able to login a user', async () => {
     let response = await request(app).post('/auth/signup').send({
-      username: 'test',
+      username: 'test-user-3',
       password: 'password',
     });
 
@@ -100,7 +100,7 @@ describe('POST /auth/signup', () => {
     userID = response.body.id;
 
     response = await request(app).post('/auth/login').send({
-      username: 'test',
+      username: 'test-user-3',
       password: 'password',
     });
 
@@ -116,7 +116,7 @@ describe('POST /auth/signup', () => {
 
   it('should be automatically logged in after signing up', async () => {
     const response = await request(app).post('/auth/signup').send({
-      username: 'test',
+      username: 'test-user-4',
       password: 'password',
     });
 
@@ -128,7 +128,7 @@ describe('POST /auth/signup', () => {
     expect(response.statusCode).toBe(201);
     expect(response.body.id).toBeDefined();
     expect(response.body.id).toBeTypeOf('number');
-    expect(response.body.username).toEqual('test');
+    expect(response.body.username).toEqual('test-user-4');
     expect(response.body.token).toBeDefined();
     expect(response.body.expiresIn).toBeDefined();
     userID = response.body.id;
