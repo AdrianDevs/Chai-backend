@@ -3,8 +3,8 @@ import { resolve } from 'path';
 export default {
   test: {
     environment: 'node',
-    setupFiles: 'src/test/load-env.ts',
-    globalSetup: 'src/test/global-setup.ts',
+    setupFiles: 'src/tests/load-env.ts',
+    globalSetup: 'src/tests/global-setup.ts',
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],

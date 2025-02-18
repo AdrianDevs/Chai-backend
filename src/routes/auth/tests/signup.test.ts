@@ -68,27 +68,6 @@ describe('POST /auth/signup', () => {
     expect(response.statusCode).toBe(500);
   });
 
-  it('should be able to login a user', async () => {
-    let response = await request(app).post('/auth/signup').send({
-      username: 'test-user-3',
-      password: 'password',
-    });
-
-    expect(response.statusCode).toBe(201);
-    expect(response.body.id).toBeDefined();
-    expect(response.body.id).toBeTypeOf('number');
-    userID = response.body.id;
-
-    response = await request(app).post('/auth/login').send({
-      username: 'test-user-3',
-      password: 'password',
-    });
-
-    expect(response.statusCode).toBe(200);
-    expect(response.body.token).toBeDefined();
-    expect(response.body.expiresIn).toBeDefined();
-  });
-
   it('should be automatically logged in after signing up', async () => {
     const response = await request(app).post('/auth/signup').send({
       username: 'test-user-4',

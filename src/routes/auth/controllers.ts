@@ -47,6 +47,7 @@ class Controller {
         res.status(401).json({ message: 'Incorrect username or password.' });
         return;
       }
+
       res
         .status(200)
         .json({ token: userAndToken.token, expiresIn: userAndToken.expires });
