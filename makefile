@@ -67,6 +67,14 @@ test-staging:
 	docker compose  -f docker-compose.yml -f docker-compose.staging.db.yml -f docker-compose.staging.web.yml down --volumes
 	@echo "Migrations complete!"
 
+# Tidy up docker images, volumes and networks
+tidy:
+	@echo "Tidying up..."
+	docker image prune -f
+	docker volume prune -f
+	docker network prune -f
+	@echo "Tidying up complete!"
+
 # Application version
 version:
 	@echo "$(APP_NAME) version $(VERSION)"
@@ -83,5 +91,6 @@ help:
 	@echo "  make down-db-dev      - Stop and remove database development container"
 	@echo "  make test-migrations  - Test migrations"
 	@echo "  make test-staging     - Run tests in the test environment"
+	@echo "  make tidy             - Tidy up docker images, volumes and networks"
 	@echo "  make version          - Show application version"
 	@echo "  make help             - Show this help message"

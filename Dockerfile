@@ -10,6 +10,7 @@ RUN npm run build
 FROM node:current-alpine AS prod
 WORKDIR /home/node/app
 COPY package*.json .
+COPY ./keys ./keys
 RUN npm ci --only=production
 COPY --from=build /home/node/app/dist ./dist
 EXPOSE 8080
