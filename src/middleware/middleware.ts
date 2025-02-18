@@ -25,10 +25,6 @@ export const currentUserMiddleware = async (
   res: Response,
   next: NextFunction
 ) => {
-  // eslint-disable-next-line no-console
-  console.log('currentUserMiddleware');
-  // eslint-disable-next-line no-console
-  console.log('- req.user', req.user);
   res.locals.user = req.user;
   next();
 };
@@ -52,8 +48,6 @@ export const handleUnknownError = async (
   res: Response,
   _next: NextFunction
 ) => {
-  // eslint-disable-next-line no-console
-  console.error(err);
   res
     .status(err.statusCode || 500)
     .json({ statusCode: err.statusCode || 500, message: err.message });

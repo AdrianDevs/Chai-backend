@@ -1,25 +1,17 @@
-// console.log('load-env');
+import { afterAll, afterEach, beforeAll, beforeEach } from 'vitest';
 
-// beforeAll(() => {
-//   // Set up test environment
-//   // eslint-disable-next-line no-console
-//   console.log('load-env-beforeAll');
-// });
+beforeAll(() => {
+  // Set up test environment
+});
 
-// beforeEach(() => {
-//   // Set up before each test
-//   // eslint-disable-next-line no-console
-//   console.log('load-env-beforeEach');
-// });
+beforeEach(() => {
+  // Set up before each test
+});
 
-// afterAll(() => {
-//   // Clean up after all tests
-//   // eslint-disable-next-line no-console
-//   console.log('load-env-afterAll');
-// });
+afterAll(() => {
+  // Clean up after all tests
+});
 
-// afterEach(() => {
-//   // Clean up after each test
-//   // eslint-disable-next-line no-console
-//   console.log('load-env-afterEach');
-// });
+afterEach(() => {
+  // Clean up after each test
+});

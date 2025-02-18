@@ -21,8 +21,9 @@ class Controller {
   }
 
   public getMessages = asyncHandler(async (req: Request, res: Response) => {
+    const user = req.user?.username || 'unknown';
     const messages = await this.service.getMessages();
-    res.json(messages);
+    res.json({ user, messages });
   });
 
   public getMessageById = asyncHandler(async (req: Request, res: Response) => {

@@ -29,18 +29,6 @@ class Store implements StoreInterface {
       .executeTakeFirst();
   };
 
-  public findUserByUsernameAndPassword = async (
-    username: string,
-    password: string
-  ): Promise<User | undefined> => {
-    return await db
-      .selectFrom('users')
-      .where('username', '=', username)
-      .where('password', '=', password)
-      .selectAll()
-      .executeTakeFirst();
-  };
-
   public updateUser = async (
     id: number,
     updateWith: Partial<User>

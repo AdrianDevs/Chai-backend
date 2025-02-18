@@ -41,11 +41,6 @@ describe('POST /auth/signup', () => {
       password: 'password',
     });
 
-    // eslint-disable-next-line no-console
-    console.log('response status code', response.statusCode);
-    // eslint-disable-next-line no-console
-    console.log('response body', response.body);
-
     expect(response.statusCode).toBe(201);
     expect(response.body.id).toBeDefined();
     expect(response.body.id).toBeTypeOf('number');
@@ -60,11 +55,6 @@ describe('POST /auth/signup', () => {
       password: 'password',
     });
 
-    // eslint-disable-next-line no-console
-    console.log('response status code', response.statusCode);
-    // eslint-disable-next-line no-console
-    console.log('response body', response.body);
-
     expect(response.statusCode).toBe(201);
     expect(response.body.id).toBeDefined();
     expect(response.body.id).toBeTypeOf('number');
@@ -75,11 +65,6 @@ describe('POST /auth/signup', () => {
       password: 'password',
     });
 
-    // eslint-disable-next-line no-console
-    console.log('response status code', response.statusCode);
-    // eslint-disable-next-line no-console
-    console.log('response body', response.body);
-
     expect(response.statusCode).toBe(500);
   });
 
@@ -88,11 +73,6 @@ describe('POST /auth/signup', () => {
       username: 'test-user-3',
       password: 'password',
     });
-
-    // eslint-disable-next-line no-console
-    console.log('response status code', response.statusCode);
-    // eslint-disable-next-line no-console
-    console.log('response body', response.body);
 
     expect(response.statusCode).toBe(201);
     expect(response.body.id).toBeDefined();
@@ -104,11 +84,6 @@ describe('POST /auth/signup', () => {
       password: 'password',
     });
 
-    // eslint-disable-next-line no-console
-    console.log('response status code', response.statusCode);
-    // eslint-disable-next-line no-console
-    console.log('response body', response.body);
-
     expect(response.statusCode).toBe(200);
     expect(response.body.token).toBeDefined();
     expect(response.body.expiresIn).toBeDefined();
@@ -119,11 +94,6 @@ describe('POST /auth/signup', () => {
       username: 'test-user-4',
       password: 'password',
     });
-
-    // eslint-disable-next-line no-console
-    console.log('response status code', response.statusCode);
-    // eslint-disable-next-line no-console
-    console.log('response body', response.body);
 
     expect(response.statusCode).toBe(201);
     expect(response.body.id).toBeDefined();

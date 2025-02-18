@@ -51,6 +51,11 @@ export const generatePassword = (password: string) => {
   };
 };
 
+/**
+ * This is the JWT token that is issued to the user upon successful login
+ * The token is signed with the private key and the user ID is set as the payload
+ * The token is set to expire in 1 day
+ */
 export type JwtToken = {
   token: string;
   expires: string;
@@ -61,15 +66,17 @@ export type JwtToken = {
  */
 export function issueJWT(user: User): JwtToken {
   const _id = user.id;
+  const _user = { id: user.id, username: user.username };
 
   const expiresIn = '1d';
 
   const payload = {
     sub: _id,
+    user: _user,
     iat: Date.now(),
   };
 
-  const pathToPublicKey = path.join(__dirname, '../..', 'jwt_private.key');
+  const pathToPublicKey = path.join(__dirname, '../../keys', 'jwt_private.key');
   const PRIV_KEY = fs.readFileSync(pathToPublicKey, 'utf8');
 
   const signedToken = jsonwebtoken.sign(payload, PRIV_KEY, {
@@ -83,6 +90,13 @@ export function issueJWT(user: User): JwtToken {
   };
 }
 
+/**
+ * -------------- MIDDLEWARE ----------------
+ */
+
+/**
+ * This middleware function is used to check if the user is authenticated by checking the JWT token
+ */
 export const checkAuthenticated = passport.authenticate('jwt', {
   session: false,
 });

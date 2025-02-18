@@ -11,8 +11,6 @@ export class CustomError extends Error {
   public type: ErrorType;
 
   constructor(message: string, statusCode?: number, type?: ErrorType) {
-    // eslint-disable-next-line no-console
-    console.log('CustomError constructor');
     super(message);
     this.statusCode = statusCode || 500;
     this.type = type || ErrorType.UNKNOWN;

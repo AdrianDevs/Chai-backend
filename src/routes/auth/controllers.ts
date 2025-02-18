@@ -1,4 +1,4 @@
-import { Express, NextFunction, Request, Response } from 'express';
+import { NextFunction, Request, Response } from 'express';
 import asyncHandler from 'express-async-handler';
 import { User } from '@/database/types/user';
 import { JwtToken } from '@/utils';
@@ -10,10 +10,6 @@ export interface UserServiceInterface {
     password: string
   ) => Promise<(User & JwtToken) | undefined>;
   findUserById: (id: number) => Promise<User | undefined>;
-  findUserByUsernameAndPassword: (
-    username: string,
-    password: string
-  ) => Promise<User | undefined>;
 }
 
 class Controller {
@@ -34,15 +30,7 @@ class Controller {
           token: userAndToken.token,
           expiresIn: userAndToken.expires,
         });
-        // req.login(user, (err) => {
-        //   if (err) {
-        //     return next(err);
-        //   }
-        //   return res.redirect('/');
-        // });
       } catch (err) {
-        // eslint-disable-next-line no-console
-        console.log('ERROR');
         return next(err);
       }
     }
@@ -50,27 +38,6 @@ class Controller {
 
   public login = asyncHandler(
     async (req: Request, res: Response, next: NextFunction) => {
-      // passport.authenticate(
-      //   'local',
-      //   (err: Error, user: Express.User, info: IVerifyOptions) => {
-      //     if (err) {
-      //       return next(err);
-      //     }
-      //     if (!user) {
-      //       return res.status(401).render('login', {
-      //         links: links,
-      //         errors: [{ msg: info.message }],
-      //       });
-      //     }
-      //     req.login(user, (err) => {
-      //       if (err) {
-      //         return next(err);
-      //       }
-      //       return res.redirect('/');
-      //     });
-      //   }
-      // )(req, res, next);
-
       const userAndToken = await this.service.login(
         req.body.username,
         req.body.password
@@ -80,35 +47,11 @@ class Controller {
         res.status(401).json({ message: 'Incorrect username or password.' });
         return;
       }
-
-      // const isValid = validatePassword(
-      //   req.body.password,
-      //   user.password,
-      //   user.salt
-      // );
-
-      // if (!isValid) {
-      //   res.status(401).json({ message: 'Incorrect username or password.' });
-      //   return;
-      // }
-
-      // const tokenObjecct = issueJWT(user);
       res
         .status(200)
         .json({ token: userAndToken.token, expiresIn: userAndToken.expires });
     }
   );
-
-  // public logout = asyncHandler(
-  //   async (req: Request, res: Response, next: NextFunction) => {
-  //     req.logout((err) => {
-  //       if (err) {
-  //         next(err);
-  //       }
-  //       res.redirect('/');
-  //     });
-  //   }
-  // );
 }
 
 const createController = (service: UserServiceInterface) => {

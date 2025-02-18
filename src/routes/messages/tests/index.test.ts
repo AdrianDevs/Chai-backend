@@ -36,12 +36,6 @@ describe('GET /messages', () => {
   it('should not be able to view messages if not logged in', async () => {
     // runs concurrently with other tests
     const response = await request(app).get('/messages');
-
-    // eslint-disable-next-line no-console
-    console.log('response status code', response.statusCode);
-    // eslint-disable-next-line no-console
-    console.log('response body', response.body);
-
     expect(response.statusCode).toBe(401);
   });
 
@@ -50,11 +44,6 @@ describe('GET /messages', () => {
       username: 'test-message-user',
       password: 'password',
     });
-
-    // eslint-disable-next-line no-console
-    console.log('response status code', response.statusCode);
-    // eslint-disable-next-line no-console
-    console.log('response body', response.body);
 
     expect(response.statusCode).toBe(201);
     expect(response.body.id).toBeDefined();
@@ -69,11 +58,6 @@ describe('GET /messages', () => {
       .get('/messages')
       .set('Accept', 'application/json')
       .set('Authorization', `${token}`);
-
-    // eslint-disable-next-line no-console
-    console.log('response status code', response.statusCode);
-    // eslint-disable-next-line no-console
-    console.log('response body', response.body);
 
     expect(response.statusCode).toBe(200);
   });
