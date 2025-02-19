@@ -1,0 +1,495 @@
+openapi: '3.0.3'
+
+info:
+  title: Messaging API
+  description: A messaging API with JWT authentication and group messaging support
+  version: 1.0.0
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: https://api.chai.com
+    description: Production server
+
+security:
+  - bearerAuth: [] # Global JWT security
+
+paths:
+  /health:
+    get:
+      tags: [Health]
+      operationId: checkHealth
+      summary: Check API health
+      security: []
+      responses:
+        '200':
+          description: API is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: 'API is healthy'
+        '500':
+          description: API is unhealthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: 'API is unhealthy'
+  /auth/signup:
+    post:
+      tags: [Auth]
+      operationId: registerUser
+      summary: Register a new user
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                # email:
+                #   type: string
+                #   format: email
+                username:
+                  type: string
+                password:
+                  type: string
+                  format: password
+      responses:
+        '201':
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: 'User registered successfully'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /auth/login:
+    post:
+      tags: [Auth]
+      operationId: loginUser
+      summary: 'Login a user and get a JWT token'
+      security: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    $ref: '#/components/schemas/Token'
+                  user:
+                    $ref: '#/components/schemas/User'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /conversations:
+    get:
+      tags: [Conversations]
+      operationId: getConversations
+      summary: Get all conversations
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Conversation'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      tags: [Conversations]
+      operationId: createConversation
+      summary: Create a new conversation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                user_ids:
+                  type: array
+                  items:
+                    type: integer
+      responses:
+        '201':
+          description: Conversation created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Conversation'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /conversations/{conversation_id}:
+    get:
+      tags: [Conversations]
+      operationId: getConversation
+      summary: Get a conversation by ID
+      parameters:
+        - name: conversation_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Conversation'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    patch:
+      tags: [Conversations]
+      operationId: addUsersToConversation
+      summary: Rename a conversation by ID
+      parameters:
+        - name: conversation_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+      responses:
+        '200':
+          description: Conversation renamed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: 'Conversation renamed successfully'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      tags: [Conversations]
+      operationId: deleteConversation
+      summary: Delete a conversation by ID
+      parameters:
+        - name: conversation_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Conversation deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: 'Conversation deleted successfully'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /conversations/{conversation_id}/users:
+    get:
+      tags: [Users]
+      operationId: getConversationUsers
+      summary: Get all users in a conversation
+      parameters:
+        - name: conversation_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      tags: [Users]
+      operationId: addUserToConversation
+      summary: Add a user to a conversation
+      parameters:
+        - name: conversation_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user_id:
+                  type: integer
+      responses:
+        '201':
+          description: User added successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: 'User added successfully'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      tags: [Users]
+      operationId: removeUserFromConversation
+      summary: Remove a user from a conversation
+      parameters:
+        - name: conversation_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user_id:
+                  type: integer
+      responses:
+        '200':
+          description: User removed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: 'User removed successfully'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /conversations/{conversation_id}/messages:
+    get:
+      tags: [Messages]
+      operationId: getMessages
+      summary: Get all messages in a conversation
+      parameters:
+        - name: conversation_id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 10
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Message'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      tags: [Messages]
+      operationId: sendMessage
+      summary: Send a message to a conversation
+      parameters:
+        - name: conversation_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user_id:
+                  type: integer
+                text:
+                  type: string
+      responses:
+        '201':
+          description: Message sent successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: 'Message sent successfully'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Token:
+      type: object
+      properties:
+        token:
+          type: string
+        expires:
+          type: string
+    Error:
+      type: object
+      properties:
+        status:
+          type: integer
+          example: 400
+        message:
+          type: string
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+              message:
+                type: string
+    User:
+      type: object
+      properties:
+        id:
+          type: number
+        username:
+          type: string
+    Conversation:
+      type: object
+      properties:
+        id:
+          type: number
+        name:
+          type: string
+    Message:
+      type: object
+      properties:
+        id:
+          type: number
+        text:
+          type: string
+        user_id:
+          type: number
+        user_name:
+          type: string
+        created_at:
+          type: string

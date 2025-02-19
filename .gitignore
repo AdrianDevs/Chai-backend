@@ -44,3 +44,6 @@ yarn.lock
 
 # Keystore files
 *.key
+
+# API Docs
+.42c

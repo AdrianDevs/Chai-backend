@@ -4,6 +4,8 @@ import path from 'node:path';
 import express from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
+import swaggerJsdoc from 'swagger-jsdoc';
+import swaggerUI from 'swagger-ui-express';
 import {
   handleUnauthorizedError,
   handleUnknownError,
@@ -13,6 +15,7 @@ import { jwtStrategy } from './config/passport';
 import createService from './routes/auth/service';
 import store from './routes/auth/store';
 import passport from 'passport';
+import apiOptions from './config/api';
 
 console.log('Starting server');
 
@@ -36,6 +39,15 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan('dev'));
 app.use(express.static(path.join(__dirname, 'public')));
+
+const apiSpec = swaggerJsdoc(apiOptions);
+app.use('/api-docs', swaggerUI.serve, swaggerUI.setup(apiSpec));
+
+app.get('/api-spec', (req, res) => {
+  // res.setHeader('Content-Type', 'application/json');
+  // res.send('/api-docs.html');
+  res.sendFile(path.join(__dirname, 'public', 'api-docs.html'));
+});
 
 app.use(routes);
 
