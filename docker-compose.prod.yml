@@ -1,11 +1,14 @@
 services:
   web:
-    container_name: chai-web
+    container_name: chai-server
     build:
       context: .
       dockerfile: Dockerfile
       target: prod
     environment:
+      NODE_ENV: ${NODE_ENV}
+      PORT: ${PORT}
+      CORS_ORIGIN: ${CORS_ORIGIN}
       POSTGRES_HOST: postgres
     ports:
       - '8080:8080'

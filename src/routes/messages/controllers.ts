@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import asyncHandler from 'express-async-handler';
 import { Message, MessageUpdate, NewMessage } from '@/database/types/message';
-import { CustomError, ErrorType } from '@/errors';
+import { CustomError } from '@/errors';
 import { body, validationResult } from 'express-validator';
 
 export interface ServiceInterface {
@@ -32,11 +32,7 @@ class Controller {
     if (message) {
       res.json(message);
     } else {
-      throw new CustomError(
-        `Message with id ${id} not found`,
-        404,
-        ErrorType.MESSAGE_NOT_FOUND
-      );
+      throw new CustomError(404, `Message with id ${id} not found`);
     }
   });
 

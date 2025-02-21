@@ -1,14 +1,35 @@
 import express from 'express';
-import createService from './service';
 import createController from './controllers';
-import store from './store';
+import createService from './service';
+import store from '@users/store';
 import { contextLoggingMiddleware } from '@/middleware/middleware';
 
 const router = express.Router();
 const service = createService(store);
 const controller = createController(service);
 
-router.use(contextLoggingMiddleware('[user]'));
+router.use(contextLoggingMiddleware('[auth]'));
+
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     Token:
+ *       type: object
+ *       required:
+ *         - token
+ *         - expires
+ *       properties:
+ *         token:
+ *           type: string
+ *           description: The JWT token
+ *         expires:
+ *           type: string
+ *           description: The expiration date of the token
+ *       example:
+ *         token: <jwt_token>
+ *         expires: <expiration_date>
+ */
 
 /**
  * @swagger
@@ -16,24 +37,37 @@ router.use(contextLoggingMiddleware('[user]'));
  *   post:
  *     summary: Create a new user
  *     description: Create a new user with the given username and password
+ *     tags: [Auth]
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
- *             type: object
- *             properties:
- *               username:
- *                 type: string
- *               password:
- *                 type: string
+ *            type: object
+ *            properties:
+ *             username:
+ *              type: string
+ *             password:
+ *              type: string
  *     responses:
  *       201:
- *         description: User created
+ *        description: User created
+ *        content:
+ *         application/json:
+ *          schema:
+ *           $ref: '#/components/schemas/User'
  *       400:
- *         description: Bad request
+ *        description: Bad request
+ *        content:
+ *         application/json:
+ *          schema:
+ *           $ref: '#/components/schemas/Error'
  *       409:
- *         description: User already exists
+ *        description: User already exists
+ *        content:
+ *         application/json:
+ *          schema:
+ *           $ref: '#/components/schemas/Error'
  */
 router.post('/signup', controller.signup);
 
@@ -43,6 +77,7 @@ router.post('/signup', controller.signup);
  *   post:
  *     summary: Login
  *     description: Login with the given username and password
+ *     tags: [Auth]
  *     requestBody:
  *       required: true
  *       content:
@@ -51,9 +86,9 @@ router.post('/signup', controller.signup);
  *             type: object
  *             properties:
  *               username:
- *                 type: string
- *               password:
- *                 type: string
+ *                type: string
+ *               user:
+ *                type: string
  *     responses:
  *       200:
  *         description: User logged in
@@ -63,13 +98,21 @@ router.post('/signup', controller.signup);
  *               type: object
  *               properties:
  *                 token:
- *                   type: string
+ *                   $ref: '#/components/schemas/Token'
  *                 expiresIn:
- *                   type: string
+ *                   $ref: '#/components/schemas/User'
  *       400:
  *         description: Bad request
+ *         content:
+ *          application/json:
+ *           schema:
+ *            $ref: '#/components/schemas/Error'
  *       401:
  *         description: Unauthorized
+ *         content:
+ *          application/json:
+ *           schema:
+ *            $ref: '#/components/schemas/Error'
  */
 router.post('/login', controller.login);
 

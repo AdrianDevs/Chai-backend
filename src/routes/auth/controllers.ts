@@ -2,20 +2,22 @@ import { NextFunction, Request, Response } from 'express';
 import asyncHandler from 'express-async-handler';
 import { User } from '@/database/types/user';
 import { JwtToken } from '@/utils';
+import { CustomError } from '@/errors';
 
-export interface UserServiceInterface {
+export interface AuthServiceInterface {
   signup: (username: string, password: string) => Promise<User & JwtToken>;
   login: (
     username: string,
     password: string
   ) => Promise<(User & JwtToken) | undefined>;
   findUserById: (id: number) => Promise<User | undefined>;
+  findUserByUsername: (username: string) => Promise<User | undefined>;
 }
 
 class Controller {
-  private service: UserServiceInterface;
+  private service: AuthServiceInterface;
 
-  constructor(service: UserServiceInterface) {
+  constructor(service: AuthServiceInterface) {
     this.service = service;
   }
 
@@ -31,13 +33,17 @@ class Controller {
           expiresIn: userAndToken.expires,
         });
       } catch (err) {
+        if (err instanceof CustomError) {
+          res.status(err.status).json({ message: err.message });
+          return;
+        }
         return next(err);
       }
     }
   );
 
   public login = asyncHandler(
-    async (req: Request, res: Response, next: NextFunction) => {
+    async (req: Request, res: Response, _next: NextFunction) => {
       const userAndToken = await this.service.login(
         req.body.username,
         req.body.password
@@ -55,7 +61,7 @@ class Controller {
   );
 }
 
-const createController = (service: UserServiceInterface) => {
+const createController = (service: AuthServiceInterface) => {
   return new Controller(service);
 };
 

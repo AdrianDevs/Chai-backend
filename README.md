@@ -12,6 +12,12 @@ A basic inventory application for a store consisting of items and their categori
 $ npm install
 ```
 
+#### Start Database
+
+```sh
+$ make up-db-dev
+```
+
 #### Compile Build
 
 Compile TypeScript files to JavaScript files.
@@ -30,7 +36,7 @@ $ npm run start
 
 #### Run Typescript
 
-Run typescript without compilation. 
+Run TypeScript without compilation. 
 
 ```bash
 $ npm run local
@@ -38,7 +44,7 @@ $ npm run local
 
 #### Watch
 
-Run typescript without compilation, watch for file changes, and restart the server when they are detected.
+Run Typescript without compilation, watch for file changes, and restart the server when they are detected.
 
 ```bash
 $ npm run dev
@@ -74,11 +80,47 @@ $ make up
 - Secret scanner for commits with `Gitleaks`
 - Commit message linting with `commitlint`
 - Commit hooks with `lefthook`
+- API documentation with `OpenAPI`, `Swagger`, and `JSDoc`.
 
 ## Backend
 
 - Runtime: `NodeJS`
 - Framework: `ExpressJS`
+- Restful API Design
 - Unit and integration testing with `Vitest` and `Supertest`
 - Structured database with `PostgreSQL`
 - Database migrations with `Kysley`
+- Auth using JWTs with `PassportJS`
+
+## Hosting (Local)
+
+- Containerisation with `Docker Compose`
+- File Storage with `MinIO` [TODO]
+- Reverse Proxy with `NGINX` [TODO]
+
+## Hosting (Production)
+
+- CI/CD with GitHub Actions [TODO]
+- AWS Cloudfront, API Gateway, ECS (Fargate), RDS, S3, Terraform [TODO]
+
+## Principles
+
+- Domain Driven Design
+- Onion Architecture
+
+## TODO
+
+- Changelog
+- Google Analytics
+- Logging, APM (tracing), and Metrics
+- Sentry
+- Mixpanel
+- JWT Refresh Tokens
+- JWT black listing
+- Email verification
+- Local email testing
+- Auth with `Supertokens` or `Zitadel`
+- Webhooks
+- WebSockets
+- RabbitMQ
+- Snowflake

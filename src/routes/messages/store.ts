@@ -4,12 +4,12 @@ import { StoreInterface } from './services';
 
 class Store implements StoreInterface {
   public getMessages = async (): Promise<Message[]> => {
-    return await db.selectFrom('messages').selectAll().execute();
+    return await db.selectFrom('message').selectAll().execute();
   };
 
   public findMessageById = async (id: number): Promise<Message | undefined> => {
     return await db
-      .selectFrom('messages')
+      .selectFrom('message')
       .where('id', '=', id)
       .selectAll()
       .executeTakeFirst();
@@ -18,7 +18,7 @@ class Store implements StoreInterface {
   public findMessages = async (
     criteria: Partial<Message>
   ): Promise<Message[]> => {
-    let query = db.selectFrom('messages');
+    let query = db.selectFrom('message');
 
     if (criteria.id) {
       query = query.where('id', '=', criteria.id);
@@ -41,7 +41,7 @@ class Store implements StoreInterface {
 
   public createMessage = async (message: NewMessage): Promise<Message> => {
     return await db
-      .insertInto('messages')
+      .insertInto('message')
       .values(message)
       .returningAll()
       .executeTakeFirstOrThrow();
@@ -52,7 +52,7 @@ class Store implements StoreInterface {
     updateWith: MessageUpdate
   ): Promise<Message> => {
     return await db
-      .updateTable('messages')
+      .updateTable('message')
       .set(updateWith)
       .where('id', '=', id)
       .returningAll()
@@ -61,7 +61,7 @@ class Store implements StoreInterface {
 
   public deleteMessage = async (id: number): Promise<Message | undefined> => {
     return await db
-      .deleteFrom('messages')
+      .deleteFrom('message')
       .where('id', '=', id)
       .returningAll()
       .executeTakeFirst();

@@ -1,24 +1,18 @@
-import { UserServiceInterface } from './controllers';
-import { NewUser, User } from '@/database/types/user';
+import { AuthServiceInterface } from './controllers';
+import { UserStoreInterface } from '@users/service';
+import { User } from '@/database/types/user';
 import {
   generatePassword,
   issueJWT,
   JwtToken,
   validatePassword,
 } from '@/utils';
+import { CustomError } from '@/errors';
 
-export interface StoreInterface {
-  createUser: (user: NewUser) => Promise<User>;
-  findUserById: (id: number) => Promise<User | undefined>;
-  findUserByUsername: (username: string) => Promise<User | undefined>;
-  updateUser: (id: number, updateWith: Partial<User>) => Promise<User>;
-  deleteUser: (id: number) => Promise<User | undefined>;
-}
+class Service implements AuthServiceInterface {
+  private store: UserStoreInterface;
 
-class Service implements UserServiceInterface {
-  private store: StoreInterface;
-
-  constructor(store: StoreInterface) {
+  constructor(store: UserStoreInterface) {
     this.store = store;
   }
 
@@ -27,6 +21,12 @@ class Service implements UserServiceInterface {
     password: string
   ): Promise<User & JwtToken> => {
     const saltHash = generatePassword(password);
+
+    const userExists = await this.store.findUserByUsername(username);
+    if (userExists) {
+      throw new CustomError(409, 'User already exists');
+    }
+
     const salt = saltHash.salt;
     const hash = saltHash.hash;
 
@@ -63,9 +63,15 @@ class Service implements UserServiceInterface {
   public findUserById = async (id: number): Promise<User | undefined> => {
     return await this.store.findUserById(id);
   };
+
+  public findUserByUsername = async (
+    username: string
+  ): Promise<User | undefined> => {
+    return await this.store.findUserByUsername(username);
+  };
 }
 
-const createService = (store: StoreInterface) => {
+const createService = (store: UserStoreInterface) => {
   return new Service(store);
 };
 

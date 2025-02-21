@@ -1,40 +1,18 @@
 import app from '../../../index';
 import request from 'supertest';
-import {
-  afterAll,
-  afterEach,
-  beforeAll,
-  beforeEach,
-  describe,
-  expect,
-  it,
-} from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { db } from '../../../database/database';
 
 describe('GET /messages', () => {
   let userID: number;
 
-  beforeAll(() => {
-    // Set up test environment
-  });
-
-  beforeEach(() => {
-    // Set up before each test
-  });
-
-  afterAll(() => {
-    // Clean up after all tests
-  });
-
   afterEach(() => {
-    // Clean up after each test
     if (userID) {
-      db.deleteFrom('users').where('id', '=', userID).execute();
+      db.deleteFrom('user').where('id', '=', userID).execute();
     }
   });
 
   it('should not be able to view messages if not logged in', async () => {
-    // runs concurrently with other tests
     const response = await request(app).get('/messages');
     expect(response.statusCode).toBe(401);
   });

@@ -14,6 +14,8 @@ export default {
     alias: {
       '@': resolve(__dirname, '/src'),
       '@auth': resolve(__dirname, './src/routes/auth'),
+      '@users': resolve(__dirname, './src/routes/users'),
+      '@conversations': resolve(__dirname, './src/routes/conversations'),
       '@messages': resolve(__dirname, './src/routes/messages'),
       '@database': resolve(__dirname, './src/database'),
     },

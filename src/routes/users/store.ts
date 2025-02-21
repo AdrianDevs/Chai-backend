@@ -1,11 +1,11 @@
 import { db } from '@/database/database';
 import { NewUser, User } from '@/database/types/user';
-import { StoreInterface } from './service';
+import { UserStoreInterface } from './service';
 
-class Store implements StoreInterface {
+class Store implements UserStoreInterface {
   public createUser = async (user: NewUser): Promise<User> => {
     return await db
-      .insertInto('users')
+      .insertInto('user')
       .values(user)
       .returningAll()
       .executeTakeFirstOrThrow();
@@ -13,7 +13,7 @@ class Store implements StoreInterface {
 
   public findUserById = async (id: number): Promise<User | undefined> => {
     return await db
-      .selectFrom('users')
+      .selectFrom('user')
       .where('id', '=', id)
       .selectAll()
       .executeTakeFirst();
@@ -23,7 +23,7 @@ class Store implements StoreInterface {
     username: string
   ): Promise<User | undefined> => {
     return await db
-      .selectFrom('users')
+      .selectFrom('user')
       .where('username', '=', username)
       .selectAll()
       .executeTakeFirst();
@@ -34,7 +34,7 @@ class Store implements StoreInterface {
     updateWith: Partial<User>
   ): Promise<User> => {
     return await db
-      .updateTable('users')
+      .updateTable('user')
       .set(updateWith)
       .where('id', '=', id)
       .returningAll()
@@ -43,7 +43,7 @@ class Store implements StoreInterface {
 
   public deleteUser = async (id: number): Promise<User | undefined> => {
     return await db
-      .deleteFrom('users')
+      .deleteFrom('user')
       .where('id', '=', id)
       .returningAll()
       .executeTakeFirst();

@@ -65,7 +65,7 @@ test-staging:
 	npx vitest --run
 	@echo "Stopping test database container..."
 	docker compose  -f docker-compose.yml -f docker-compose.staging.db.yml -f docker-compose.staging.web.yml down --volumes
-	@echo "Migrations complete!"
+	@echo "Testing complete!"
 
 # Tidy up docker images, volumes and networks
 tidy:

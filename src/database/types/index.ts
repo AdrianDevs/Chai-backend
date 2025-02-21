@@ -1,7 +1,10 @@
-import { MessageTable } from './message';
 import { UserTable } from './user';
+import { MessageTable } from './message';
+import { ConversationTable, ConversationUserTable } from './conversation';
 
 export interface Database {
-  users: UserTable;
-  messages: MessageTable;
+  user: UserTable;
+  message: MessageTable;
+  conversation: ConversationTable;
+  conversation_user: ConversationUserTable;
 }

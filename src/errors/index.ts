@@ -1,18 +1,17 @@
-export enum ErrorType {
-  UNAUTHORIZED = 'UnauthorizedError',
-  MESSAGE_NOT_FOUND = 'MessageNotFoundError',
-  MESSAGE_INVALID = 'MessageInvalidError',
-  USER_NOT_FOUND = 'UserNotFoundError',
-  UNKNOWN = 'UnknownError',
-}
+export type ValidationError = {
+  field: string;
+  message: string;
+};
 
 export class CustomError extends Error {
-  public statusCode: number;
-  public type: ErrorType;
+  public status: number;
+  public message: string;
+  public errors?: ValidationError[];
 
-  constructor(message: string, statusCode?: number, type?: ErrorType) {
+  constructor(status: number, message: string, errors?: ValidationError[]) {
     super(message);
-    this.statusCode = statusCode || 500;
-    this.type = type || ErrorType.UNKNOWN;
+    this.status = status;
+    this.message = message;
+    this.errors = errors;
   }
 }

@@ -12,15 +12,14 @@ import {
 } from '@/middleware/middleware';
 import routes from '@/routes';
 import { jwtStrategy } from './config/passport';
-import createService from './routes/auth/service';
-import store from './routes/auth/store';
 import passport from 'passport';
-import apiOptions from './config/api';
+import apiOptions from './config/swagger_api';
 
-console.log('Starting server');
+console.log('[server]: Starting server');
 
 dotenv.config({ path: process.env.ENV_FILE || '.env' });
-console.log('Environment: ', process.env.NODE_ENV);
+console.log('[env]: Environment: ', process.env.NODE_ENV);
+console.log('[cors]: cors-origin: ', process.env.CORS_ORIGIN);
 
 const app = express();
 const port = process.env.PORT || 8080;
@@ -31,21 +30,19 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 
-const service = createService(store);
-const strategy = jwtStrategy(service);
-passport.use(strategy);
+passport.use(jwtStrategy);
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan('dev'));
 app.use(express.static(path.join(__dirname, 'public')));
 
-const apiSpec = swaggerJsdoc(apiOptions);
-app.use('/api-docs', swaggerUI.serve, swaggerUI.setup(apiSpec));
-
+app.use(
+  '/api-swagger',
+  swaggerUI.serve,
+  swaggerUI.setup(swaggerJsdoc(apiOptions))
+);
 app.get('/api-spec', (req, res) => {
-  // res.setHeader('Content-Type', 'application/json');
-  // res.send('/api-docs.html');
   res.sendFile(path.join(__dirname, 'public', 'api-docs.html'));
 });
 
@@ -59,7 +56,7 @@ if (process.env.NODE_ENV !== 'TEST') {
     console.log(`[server]: Server is running on at http://localhost:${port}`);
   });
 } else {
-  console.log('Server started in test environment and not listening');
+  console.log('[server]: Server started in test environment and not listening');
 }
 
 export default app;

@@ -29,6 +29,7 @@ export default {
   apis: [
     './src/routes/index.ts',
     './src/routes/auth/routes.ts',
+    './src/routes/users/routes.ts',
     './src/routes/messages/routes.ts',
   ],
 };

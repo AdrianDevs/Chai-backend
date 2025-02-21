@@ -1,6 +1,6 @@
 services:
   web:
-    container_name: chai-web
+    container_name: chai-server
     build:
       context: .
       dockerfile: Dockerfile

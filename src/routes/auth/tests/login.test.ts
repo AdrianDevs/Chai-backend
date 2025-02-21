@@ -1,18 +1,10 @@
 import request from 'supertest';
-import {
-  afterAll,
-  afterEach,
-  beforeAll,
-  beforeEach,
-  describe,
-  expect,
-  it,
-} from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import app from '../../../index';
 import { db } from '../../../database/database';
 
 describe('POST /auth/login', () => {
-  const username = 'test-user-3';
+  const username = 'test-login-user-1';
   const password = 'password';
   let userID: number;
 
@@ -31,7 +23,7 @@ describe('POST /auth/login', () => {
 
   afterAll(() => {
     if (userID) {
-      db.deleteFrom('users').where('id', '=', userID).execute();
+      db.deleteFrom('user').where('id', '=', userID).execute();
     }
   });
 

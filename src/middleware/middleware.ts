@@ -1,4 +1,4 @@
-import { CustomError, ErrorType } from '@/errors';
+import { CustomError } from '@/errors';
 import { Request, Response, NextFunction } from 'express';
 
 export class ContextLog {
@@ -30,25 +30,25 @@ export const currentUserMiddleware = async (
 };
 
 export const handleUnauthorizedError = async (
-  err: CustomError,
+  err: CustomError | Error,
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
-  if (err.statusCode === 401 && err.type === ErrorType.UNAUTHORIZED) {
-    res.status(err.statusCode).json({ message: err.message });
+  if (err instanceof CustomError) {
+    res
+      .status(err.status)
+      .json({ status: err.status, message: err.message, errors: err.errors });
   } else {
     next(err);
   }
 };
 
 export const handleUnknownError = async (
-  err: CustomError,
+  err: Error,
   req: Request,
   res: Response,
   _next: NextFunction
 ) => {
-  res
-    .status(err.statusCode || 500)
-    .json({ statusCode: err.statusCode || 500, message: err.message });
+  res.status(500).json({ status: 500, message: err.message });
 };
