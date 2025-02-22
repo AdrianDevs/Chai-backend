@@ -42,7 +42,7 @@ class Store implements ConversationUserStoreInterface {
     userID: number,
     convoID: number
   ): Promise<ConversationUser | undefined> => {
-    return await db
+    const result = await db
       .insertInto('conversation_user')
       .values({
         user_id: userID,
@@ -50,6 +50,7 @@ class Store implements ConversationUserStoreInterface {
       })
       .returningAll()
       .executeTakeFirst();
+    return result;
   };
 
   public removeUserFromConversation = async (

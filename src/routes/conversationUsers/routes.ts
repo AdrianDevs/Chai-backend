@@ -5,7 +5,7 @@ import store from './store';
 import { contextLoggingMiddleware } from '@/middleware/middleware';
 import { checkAuthenticated } from '@/utils';
 
-const router = express.Router();
+const router = express.Router({ mergeParams: true });
 const service = createService(store);
 const controller = createController(service);
 

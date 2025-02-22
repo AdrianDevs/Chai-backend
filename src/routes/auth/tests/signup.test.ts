@@ -6,9 +6,9 @@ import { db } from '../../../database/database';
 describe('POST /auth/signup', () => {
   let userID: number;
 
-  afterEach(() => {
+  afterEach(async () => {
     if (userID) {
-      db.deleteFrom('user').where('id', '=', userID).execute();
+      await db.deleteFrom('user').where('id', '=', userID).execute();
     }
   });
 

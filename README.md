@@ -1,6 +1,6 @@
-# Basic Inventory Application
+# Chai Chat App Server
 
-A basic inventory application for a store consisting of items and their categories. Users can create, read, update, and delete any item or category.
+RESTful API for the Chai chat app
 
 # Running
 

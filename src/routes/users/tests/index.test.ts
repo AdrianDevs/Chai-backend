@@ -62,10 +62,10 @@ describe('GET /users', () => {
 describe('GET /users/search', () => {
   let userIDs: number[];
 
-  afterEach(() => {
+  afterEach(async () => {
     if (userIDs && userIDs.length > 0) {
       for (const userID of userIDs) {
-        db.deleteFrom('user').where('id', '=', userID).execute();
+        await db.deleteFrom('user').where('id', '=', userID).execute();
       }
     }
   });

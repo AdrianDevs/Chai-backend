@@ -88,8 +88,8 @@ routes.get('/health', (req, res) => {
 
 routes.use('/auth', authRouter);
 routes.use('/users', userRouter);
-routes.use('/conversations', conversationRouter);
 routes.use('/conversations/:conversation_id/users', conversationUserRouter);
+routes.use('/conversations', conversationRouter);
 routes.use('/messages', messageRouter);
 
 export default routes;

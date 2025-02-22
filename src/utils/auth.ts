@@ -1,9 +1,11 @@
+import { Express, Request, Response, NextFunction } from 'express';
 import crypto from 'crypto';
 import jsonwebtoken from 'jsonwebtoken';
 import fs from 'fs';
 import path from 'path';
 import { User } from '@/database/types/user';
 import passport from 'passport';
+import { CustomError } from '@/errors';
 
 /**
  * -------------- HELPER FUNCTIONS ----------------
@@ -97,6 +99,50 @@ export function issueJWT(user: User): JwtToken {
 /**
  * This middleware function is used to check if the user is authenticated by checking the JWT token
  */
-export const checkAuthenticated = passport.authenticate('jwt', {
-  session: false,
-});
+// export const checkAuthenticated = passport.authenticate('jwt', {
+//   session: false,
+// });
+export const checkAuthenticated = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  passport.authenticate(
+    'jwt',
+    {
+      session: false,
+    },
+    (err: unknown, user?: Express.User | false | null) => {
+      // console.log('checkAuthenticated');
+      // console.log('- err', err);
+      // console.log('- user', user);
+
+      // If authentication failed, `user` will be set to false. If an exception occurred, `err` will be set.
+
+      if (err) {
+        // console.log('-- have error');
+        const error = new CustomError(401, 'Autehntication failed');
+        return next(error);
+      }
+
+      if (!user) {
+        // console.log('-- have no user');
+        const error = new CustomError(401, 'Unauthorized');
+        return next(error);
+      }
+
+      req.logIn(user, { session: false }, (error) => {
+        if (error) {
+          // console.log('--- have error logging in user');
+          const customError = new CustomError(
+            401,
+            'Autehntication failed when loggin in user'
+          );
+          return next(customError);
+        }
+      });
+
+      next();
+    }
+  )(req, res, next);
+};

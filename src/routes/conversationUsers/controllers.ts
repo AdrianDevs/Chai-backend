@@ -73,8 +73,13 @@ class Controller {
       return;
     }
 
-    if (!convoID || isNaN(convoID) || !userToAddID || isNaN(userToAddID)) {
-      res.status(400).json({ message: 'Invalid request' });
+    if (!convoID || isNaN(convoID)) {
+      res.status(400).json({ message: 'Invalid conversation id' });
+      return;
+    }
+
+    if (!userToAddID || isNaN(userToAddID)) {
+      res.status(400).json({ message: 'Invalid user id' });
       return;
     }
 
@@ -108,13 +113,13 @@ class Controller {
       return;
     }
 
-    if (
-      !convoID ||
-      isNaN(convoID) ||
-      !userToRemoveID ||
-      isNaN(userToRemoveID)
-    ) {
-      res.status(400).json({ message: 'Invalid request' });
+    if (!convoID || isNaN(convoID)) {
+      res.status(400).json({ message: 'Invalid conversation id' });
+      return;
+    }
+
+    if (!userToRemoveID || isNaN(userToRemoveID)) {
+      res.status(400).json({ message: 'Invalid user id' });
       return;
     }
 
@@ -130,6 +135,7 @@ class Controller {
           .json({ message: 'Failed to remove user from conversation' });
         return;
       }
+      res.status(200).json(result);
     } catch (error) {
       if (error instanceof CustomError) {
         res.status(error.status).json({ message: error.message });
