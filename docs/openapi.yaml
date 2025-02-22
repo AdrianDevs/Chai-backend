@@ -686,68 +686,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-    patch:
-      tags:
-        - Conversations
-          Messages
-      operationId: editLastReadMessage
-      summary: Edit the last read message in a conversation for a user
-      parameters:
-        - name: conversation_id
-          in: path
-          required: true
-          schema:
-            type: integer
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                message_id:
-                  type: integer
-      responses:
-        '200':
-          description: Message edited successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: 'Message edited successfully'
-        '400':
-          description: Invalid request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '403':
-          description: Forbidden
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '404':
-          description: Conversation not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '500':
-          description: Internal server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
   /info:
     get:
       tags: [Info]

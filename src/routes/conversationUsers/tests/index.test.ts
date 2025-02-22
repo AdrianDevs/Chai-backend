@@ -5,7 +5,7 @@ import { db } from '../../../database/database';
 import createAuthService from '../../auth/service';
 import userStore from '../../users/store';
 
-describe('GET /conversations/:id/users', () => {
+describe('GET /conversations/:conversation_id/users', () => {
   const usernamePrefix = 'test-convo-user-user-';
   const userIDs: number[] = [];
   const conversationIDs: number[] = [];
@@ -310,7 +310,6 @@ describe('POST /conversations/:id/users', () => {
 
   it('should get 401 if not logged in and try to add user to conversation', async () => {
     const response = await request(app).post('/conversations/1/users');
-
     expect(response.status).toBe(401);
   });
 

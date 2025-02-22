@@ -65,7 +65,6 @@ class Controller {
   public addMessageToConversation = asyncHandler(async (req, res) => {
     const userID = req.user?.id;
     const convoID = parseInt(req.params.conversation_id);
-    const message = req.body as NewMessage;
 
     if (!userID) {
       res.status(401).json({ message: 'Unauthorized' });
@@ -76,6 +75,12 @@ class Controller {
       res.status(400).json({ message: 'Invalid request' });
       return;
     }
+
+    const message: NewMessage = {
+      content: req.body.content,
+      user_id: userID,
+      conversation_id: convoID,
+    };
 
     if (
       !message.content ||
@@ -100,7 +105,7 @@ class Controller {
           .json({ message: 'Failed to add message to conversation' });
         return;
       }
-      res.status(200).json(result);
+      res.status(201).json(result);
     } catch (error) {
       if (error instanceof CustomError) {
         res.status(error.status).json({ message: error.message });

@@ -3,6 +3,7 @@ import authRouter from '@auth/routes';
 import userRouter from '@users/routes';
 import conversationRouter from '@/routes/conversation/routes';
 import conversationUserRouter from '@/routes/conversationUsers/routes';
+import conversationMessageRouter from '@/routes/conversationMessages/routes';
 
 const routes = express.Router();
 
@@ -87,7 +88,10 @@ routes.get('/health', (req, res) => {
 
 routes.use('/auth', authRouter);
 routes.use('/users', userRouter);
-routes.use('/conversations/:conversation_id/messages', conversationUserRouter);
+routes.use(
+  '/conversations/:conversation_id/messages',
+  conversationMessageRouter
+);
 routes.use('/conversations/:conversation_id/users', conversationUserRouter);
 routes.use('/conversations', conversationRouter);
 
