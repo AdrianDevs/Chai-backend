@@ -3,6 +3,26 @@ import { Message, NewMessage } from '@/database/types/message';
 import { ConversationMessageStoreInterface } from './service';
 
 class Store implements ConversationMessageStoreInterface {
+  public numberOfMessages = async (): Promise<number> => {
+    const result = await db
+      .selectFrom('message')
+      .select((eb) => [eb.fn.count<number>('message.id').as('count')])
+      .executeTakeFirstOrThrow();
+
+    return result.count;
+  };
+
+  public lastMessageAt = async (): Promise<Date | undefined> => {
+    const message = await db
+      .selectFrom('message')
+      .orderBy('created_at', 'desc')
+      .limit(1)
+      .selectAll()
+      .executeTakeFirst();
+
+    return message?.created_at;
+  };
+
   public findMessagesInConversation = async (
     userID: number,
     convoID: number,

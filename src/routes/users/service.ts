@@ -2,6 +2,7 @@ import { NewUser, User } from '@/database/types/user';
 import { UserServiceInterface } from './controllers';
 
 export interface UserStoreInterface {
+  numberOfUsers: () => Promise<number>;
   createUser: (user: NewUser) => Promise<User>;
   findUserById: (id: number) => Promise<User | undefined>;
   findUserByUsername: (username: string) => Promise<User | undefined>;

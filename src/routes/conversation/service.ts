@@ -8,6 +8,7 @@ import { CustomError } from '@/errors';
 import { ConversationUserStoreInterface } from '../conversationUsers/service';
 
 export interface ConversationStoreInterface {
+  numberOfConversations: () => Promise<number>;
   createConversation: (
     conversation: NewConversation,
     userIds: number[]

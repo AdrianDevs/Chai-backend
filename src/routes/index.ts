@@ -4,6 +4,7 @@ import userRouter from '@users/routes';
 import conversationRouter from '@/routes/conversation/routes';
 import conversationUserRouter from '@/routes/conversationUsers/routes';
 import conversationMessageRouter from '@/routes/conversationMessages/routes';
+import infoRouter from '@/routes/info/routes';
 
 const routes = express.Router();
 
@@ -86,6 +87,7 @@ routes.get('/health', (req, res) => {
   });
 });
 
+routes.use('/info', infoRouter);
 routes.use('/auth', authRouter);
 routes.use('/users', userRouter);
 routes.use(

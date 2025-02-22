@@ -7,6 +7,15 @@ import { ConversationStoreInterface } from './service';
 import { db } from '@/database/database';
 
 class Store implements ConversationStoreInterface {
+  public numberOfConversations = async (): Promise<number> => {
+    const result = await db
+      .selectFrom('conversation')
+      .select((eb) => [eb.fn.count<number>('conversation.id').as('count')])
+      .executeTakeFirstOrThrow();
+
+    return result.count;
+  };
+
   public createConversation = async (
     conversation: NewConversation,
     userIds: number[]

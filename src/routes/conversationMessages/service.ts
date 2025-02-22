@@ -5,6 +5,8 @@ import { ConversationUserStoreInterface } from '../conversationUsers/service';
 import { ConversationStoreInterface } from '../conversation/service';
 
 export interface ConversationMessageStoreInterface {
+  numberOfMessages: () => Promise<number>;
+  lastMessageAt: () => Promise<Date | undefined>;
   findMessagesInConversation: (
     userID: number,
     convoID: number,
