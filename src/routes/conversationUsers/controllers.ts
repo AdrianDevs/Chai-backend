@@ -3,8 +3,6 @@ import { ConversationUser } from '@/database/types/conversation';
 import { CustomError } from '@/errors';
 
 export interface ConversationUserServiceInterface {
-  conversationExists: (id: number) => Promise<boolean>;
-  isUserInConversation: (userID: number, convoID: number) => Promise<boolean>;
   findUsersInConversation: (
     userID: number,
     convoID: number

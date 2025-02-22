@@ -1,14 +1,13 @@
 import express from 'express';
 import createController from './controllers';
 import createService from './service';
-import store from './store';
+import convoStore from './store';
+import userConvoStore from '../conversationUsers/store';
 import { contextLoggingMiddleware } from '@/middleware/middleware';
 import { checkAuthenticated } from '@/utils';
-import userConvoStore from '../conversationUsers/store';
-import userConvoService from '../conversationUsers/service';
 
 const router = express.Router();
-const service = createService(store, userConvoService(userConvoStore));
+const service = createService(convoStore, userConvoStore);
 const controller = createController(service);
 
 router.use(contextLoggingMiddleware('[conversation]'));

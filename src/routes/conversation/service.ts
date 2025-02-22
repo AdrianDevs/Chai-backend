@@ -5,7 +5,7 @@ import {
 } from '@/database/types/conversation';
 import { ConversationServiceInterface } from './controllers';
 import { CustomError } from '@/errors';
-import { ConversationUserServiceInterface } from '../conversationUsers/controllers';
+import { ConversationUserStoreInterface } from '../conversationUsers/service';
 
 export interface ConversationStoreInterface {
   createConversation: (
@@ -22,51 +22,54 @@ export interface ConversationStoreInterface {
 }
 
 class Service implements ConversationServiceInterface {
-  private store: ConversationStoreInterface;
-  private convoUserService: ConversationUserServiceInterface;
+  private convoStore: ConversationStoreInterface;
+  private convoUserStore: ConversationUserStoreInterface;
 
   constructor(
-    store: ConversationStoreInterface,
-    convoUserService: ConversationUserServiceInterface
+    convoStore: ConversationStoreInterface,
+    convoUserStore: ConversationUserStoreInterface
   ) {
-    this.store = store;
-    this.convoUserService = convoUserService;
+    this.convoStore = convoStore;
+    this.convoUserStore = convoUserStore;
   }
 
-  public conversationExists = async (id: number): Promise<boolean> => {
-    const convo = await this.store.findConversationById(id);
-    return !!convo;
+  private isUserInConversation = async (
+    userID: number,
+    convoID: number
+  ): Promise<boolean> => {
+    const result = await this.convoUserStore.findUserInConversation(
+      userID,
+      convoID
+    );
+    return !!result;
   };
 
   public getConversations = async (userId: number): Promise<Conversation[]> => {
-    return await this.store.getConversations(userId);
+    return await this.convoStore.getConversations(userId);
   };
 
   public findConversationById = async (
     userID: number,
     convoID: number
   ): Promise<Conversation | undefined> => {
-    const convo = await this.store.findConversationById(convoID);
+    const convo = await this.convoStore.findConversationById(convoID);
     if (!convo) {
       throw new CustomError(404, 'Conversation not found');
     }
 
-    const userInConvo = await this.convoUserService.isUserInConversation(
-      userID,
-      convoID
-    );
+    const userInConvo = await this.isUserInConversation(userID, convoID);
     if (!userInConvo) {
       throw new CustomError(403, 'Forbidden');
     }
 
-    return await this.store.findConversationById(convoID);
+    return await this.convoStore.findConversationById(convoID);
   };
 
   public createConversation = async (
     conversation: NewConversation,
     userIds: number[]
   ): Promise<Conversation> => {
-    return await this.store.createConversation(conversation, userIds);
+    return await this.convoStore.createConversation(conversation, userIds);
   };
 
   public updateConversation = async (
@@ -74,48 +77,42 @@ class Service implements ConversationServiceInterface {
     convoID: number,
     updateWith: ConversationUpdate
   ): Promise<Conversation | undefined> => {
-    const convo = await this.store.findConversationById(convoID);
+    const convo = await this.convoStore.findConversationById(convoID);
     if (!convo) {
       throw new CustomError(404, 'Conversation not found');
     }
 
-    const userInConvo = await this.convoUserService.isUserInConversation(
-      userID,
-      convoID
-    );
+    const userInConvo = await this.isUserInConversation(userID, convoID);
     if (!userInConvo) {
       throw new CustomError(403, 'Forbidden');
     }
 
-    return await this.store.updateConversation(convoID, updateWith);
+    return await this.convoStore.updateConversation(convoID, updateWith);
   };
 
   public deleteConversation = async (
     userID: number,
     convoID: number
   ): Promise<Conversation | undefined> => {
-    const convo = await this.store.findConversationById(convoID);
+    const convo = await this.convoStore.findConversationById(convoID);
     if (!convo) {
       throw new CustomError(404, 'Conversation not found');
     }
 
-    const userInConvo = await this.convoUserService.isUserInConversation(
-      userID,
-      convoID
-    );
+    const userInConvo = await this.isUserInConversation(userID, convoID);
     if (!userInConvo) {
       throw new CustomError(403, 'Forbidden');
     }
 
-    return await this.store.delteConversation(convoID);
+    return await this.convoStore.delteConversation(convoID);
   };
 }
 
 const createService = (
-  store: ConversationStoreInterface,
-  convoUserService: ConversationUserServiceInterface
+  convoStore: ConversationStoreInterface,
+  convoUserStore: ConversationUserStoreInterface
 ) => {
-  return new Service(store, convoUserService);
+  return new Service(convoStore, convoUserStore);
 };
 
 export default createService;

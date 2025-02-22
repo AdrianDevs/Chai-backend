@@ -1,10 +1,10 @@
-import { Conversation, ConversationUser } from '@/database/types/conversation';
+import { ConversationUser } from '@/database/types/conversation';
 import { User } from '@/database/types/user';
 import { ConversationUserServiceInterface } from './controllers';
 import { CustomError } from '@/errors';
+import { ConversationStoreInterface } from '../conversation/service';
 
 export interface ConversationUserStoreInterface {
-  findConversationById: (convoID: number) => Promise<Conversation | undefined>;
   findUserInConversation: (
     userID: number,
     convoID: number
@@ -23,22 +23,30 @@ export interface ConversationUserStoreInterface {
 }
 
 class Service implements ConversationUserServiceInterface {
-  private store: ConversationUserStoreInterface;
+  private convoStore: ConversationStoreInterface;
+  private convoUserStore: ConversationUserStoreInterface;
 
-  constructor(store: ConversationUserStoreInterface) {
-    this.store = store;
+  constructor(
+    convoStore: ConversationStoreInterface,
+    convoUserStore: ConversationUserStoreInterface
+  ) {
+    this.convoStore = convoStore;
+    this.convoUserStore = convoUserStore;
   }
 
-  public conversationExists = async (id: number): Promise<boolean> => {
-    const convo = await this.store.findConversationById(id);
+  private conversationExists = async (id: number): Promise<boolean> => {
+    const convo = await this.convoStore.findConversationById(id);
     return !!convo;
   };
 
-  public isUserInConversation = async (
+  private isUserInConversation = async (
     userID: number,
     convoID: number
   ): Promise<boolean> => {
-    const result = await this.store.findUserInConversation(userID, convoID);
+    const result = await this.convoUserStore.findUserInConversation(
+      userID,
+      convoID
+    );
     return !!result;
   };
 
@@ -54,7 +62,7 @@ class Service implements ConversationUserServiceInterface {
       throw new CustomError(403, 'Forbidden');
     }
 
-    const result = await this.store.findUsersInConversation(convoID);
+    const result = await this.convoUserStore.findUsersInConversation(convoID);
     if (!result) {
       return undefined;
     }
@@ -91,7 +99,10 @@ class Service implements ConversationUserServiceInterface {
       throw new CustomError(400, 'User to be added is already in conversation');
     }
 
-    return await this.store.addUserToConversation(userToAddID, convoID);
+    return await this.convoUserStore.addUserToConversation(
+      userToAddID,
+      convoID
+    );
   };
 
   public removeUserFromConversation = async (
@@ -111,12 +122,18 @@ class Service implements ConversationUserServiceInterface {
       throw new CustomError(400, 'User to be removed is not in conversation');
     }
 
-    return await this.store.removeUserFromConversation(userToRemoveID, convoID);
+    return await this.convoUserStore.removeUserFromConversation(
+      userToRemoveID,
+      convoID
+    );
   };
 }
 
-const createService = (store: ConversationUserStoreInterface) => {
-  return new Service(store);
+const createService = (
+  convoStore: ConversationStoreInterface,
+  convoUserStore: ConversationUserStoreInterface
+) => {
+  return new Service(convoStore, convoUserStore);
 };
 
 export default createService;

@@ -1,19 +1,9 @@
 import { db } from '@/database/database';
 import { ConversationUserStoreInterface } from './service';
 import { User } from '@/database/types/user';
-import { Conversation, ConversationUser } from '@/database/types/conversation';
+import { ConversationUser } from '@/database/types/conversation';
 
 class Store implements ConversationUserStoreInterface {
-  public findConversationById = async (
-    convoID: number
-  ): Promise<Conversation | undefined> => {
-    return await db
-      .selectFrom('conversation')
-      .where('id', '=', convoID)
-      .selectAll()
-      .executeTakeFirst();
-  };
-
   public findUserInConversation = async (
     userID: number,
     convoID: number

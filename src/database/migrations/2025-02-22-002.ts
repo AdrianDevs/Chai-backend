@@ -13,7 +13,10 @@ export async function up(db: Kysely<Database>): Promise<void> {
     .addColumn('last_read_message_id', 'integer', (col) =>
       col.references('message.id').onDelete('set null')
     )
-    .addPrimaryKeyConstraint('primary_key', ['conversation_id', 'user_id'])
+    .addPrimaryKeyConstraint('primary_key_convo_user', [
+      'conversation_id',
+      'user_id',
+    ])
     // .addForeignKeyConstraint('conversation_id_foreign', ['conversation_id'], 'conversation', ['id'])
     // .addForeignKeyConstraint('user_id_foreign', ['user_id'], 'user', ['id'])
     .execute();

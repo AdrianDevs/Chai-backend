@@ -8,8 +8,9 @@ import {
 
 export interface MessageTable {
   id: Generated<number>;
-  message: string;
-  user_name: string;
+  content: string;
+  user_id: number;
+  conversation_id: number;
   created_at: ColumnType<Date, string | undefined, never>;
 }
 

@@ -7,7 +7,6 @@ import {
 import { CustomError } from '@/errors';
 
 export interface ConversationServiceInterface {
-  conversationExists: (id: number) => Promise<boolean>;
   createConversation: (
     conversation: NewConversation,
     userIds: number[]
