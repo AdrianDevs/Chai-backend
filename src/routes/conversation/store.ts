@@ -5,7 +5,6 @@ import {
 } from '@/database/types/conversation';
 import { ConversationStoreInterface } from './service';
 import { db } from '@/database/database';
-import { CustomError } from '@/errors';
 
 class Store implements ConversationStoreInterface {
   public createConversation = async (
@@ -47,31 +46,30 @@ class Store implements ConversationStoreInterface {
   };
 
   public findConversationById = async (
-    userID: number,
     convoID: number
   ): Promise<Conversation | undefined> => {
-    const convo = await db
+    return await db
       .selectFrom('conversation')
       .where('id', '=', convoID)
       .selectAll()
       .executeTakeFirst();
 
-    if (!convo) {
-      return undefined;
-    }
+    // if (!convo) {
+    //   return undefined;
+    // }
 
-    const convoUser = await db
-      .selectFrom('conversation_user')
-      .where('conversation_id', '=', convo.id)
-      .where('user_id', '=', userID)
-      .selectAll()
-      .executeTakeFirst();
+    // const convoUser = await db
+    //   .selectFrom('conversation_user')
+    //   .where('conversation_id', '=', convo.id)
+    //   .where('user_id', '=', userID)
+    //   .selectAll()
+    //   .executeTakeFirst();
 
-    if (!convoUser) {
-      throw new CustomError(403, 'Forbidden');
-    }
+    // if (!convoUser) {
+    //   throw new CustomError(403, 'Forbidden');
+    // }
 
-    return convo;
+    // return convo;
 
     // return await db
     //   .selectFrom('conversation')

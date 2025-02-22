@@ -19,4 +19,9 @@ export type ConversationUpdate = Updateable<ConversationTable>;
 export interface ConversationUserTable {
   conversation_id: number;
   user_id: number;
+  last_read_message_id: number | null;
 }
+
+export type ConversationUser = Selectable<ConversationUserTable>;
+export type NewConversationUser = Insertable<ConversationUserTable>;
+export type ConversationUserUpdate = Updateable<ConversationUserTable>;

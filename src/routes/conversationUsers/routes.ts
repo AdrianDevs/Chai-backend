@@ -12,10 +12,8 @@ const controller = createController(service);
 router.use(contextLoggingMiddleware('[conversation]'));
 router.use(checkAuthenticated);
 
-router.get('/', controller.getConversations);
-router.get('/:id', controller.findConversationById);
-router.post('/', controller.createConversation);
-router.put('/:id', controller.updateConversation);
-router.delete('/:id', controller.deleteConversation);
+router.get('/', controller.getConversationUsers);
+router.post('/', controller.addUserToConversation);
+router.delete('/', controller.removeUserFromConversation);
 
 export default router;
