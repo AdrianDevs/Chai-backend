@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { db } from '../../../database/database';
 import createAuthService from '../../auth/service';
 import userStore from '../../users/store';
+import e from 'express';
 
 describe('GET /conversations/:conversation_id/users', () => {
   const usernamePrefix = 'test-convo-user-user-';
@@ -438,6 +439,42 @@ describe('POST /conversations/:id/users', () => {
       id: userResponse3.id,
       username: userResponse3.username,
     });
+
+    const user1 = await db
+      .selectFrom('conversation_user')
+      .where('user_id', '=', userResponse1.id)
+      .where('conversation_id', '=', convoResponse.body.id)
+      .selectAll()
+      .executeTakeFirst();
+
+    expect(user1).not.toBeNull();
+    if (user1) {
+      expect(user1.last_read_message_id).toBeNull();
+    }
+
+    const user2 = await db
+      .selectFrom('conversation_user')
+      .where('user_id', '=', userResponse2.id)
+      .where('conversation_id', '=', convoResponse.body.id)
+      .selectAll()
+      .executeTakeFirst();
+
+    expect(user2).not.toBeNull();
+    if (user2) {
+      expect(user2.last_read_message_id).toBeNull();
+    }
+
+    const user3 = await db
+      .selectFrom('conversation_user')
+      .where('user_id', '=', userResponse3.id)
+      .where('conversation_id', '=', convoResponse.body.id)
+      .selectAll()
+      .executeTakeFirst();
+
+    expect(user3).not.toBeNull();
+    if (user3) {
+      expect(user3.last_read_message_id).toBeNull();
+    }
   });
 });
 
@@ -719,5 +756,188 @@ describe('DELETE /conversations/:id/users', () => {
       id: userResponse2.id,
       username: userResponse2.username,
     });
+  });
+
+  it("when a user is delted from a conversation, the user should not appear in the conversation's users list", async () => {
+    const authService = createAuthService(userStore);
+
+    const userResponse1 = await authService.signup(
+      `${usernamePrefix}1`,
+      'password'
+    );
+    userIDs.push(userResponse1.id);
+
+    const userResponse2 = await authService.signup(
+      `${usernamePrefix}2`,
+      'password'
+    );
+    userIDs.push(userResponse2.id);
+
+    const userResponse3 = await authService.signup(
+      `${usernamePrefix}3`,
+      'password'
+    );
+    userIDs.push(userResponse3.id);
+
+    const loginResponse1 = await request(app)
+      .post('/auth/login')
+      .send({ username: userResponse1.username, password: 'password' });
+
+    const convoResponse = await request(app)
+      .post('/conversations')
+      .send({
+        conversation: { name: 'test-convo' },
+        user_ids: [userResponse2.id, userResponse3.id],
+      })
+      .set('Accept', 'application/json')
+      .set('Authorization', `${loginResponse1.body.token}`);
+    conversationIDs.push(convoResponse.body.id);
+
+    const convoGetUsersResponse1 = await request(app)
+      .get(`/conversations/${convoResponse.body.id}/users`)
+      .set('Accept', 'application/json')
+      .set('Authorization', `${loginResponse1.body.token}`);
+
+    expect(convoGetUsersResponse1.status).toBe(200);
+    expect(convoGetUsersResponse1.body.length).toBe(3);
+    expect(convoGetUsersResponse1.body).toContainEqual({
+      id: userResponse1.id,
+      username: userResponse1.username,
+    });
+    expect(convoGetUsersResponse1.body).toContainEqual({
+      id: userResponse2.id,
+      username: userResponse2.username,
+    });
+    expect(convoGetUsersResponse1.body).toContainEqual({
+      id: userResponse3.id,
+      username: userResponse3.username,
+    });
+
+    const response = await request(app)
+      .delete(`/conversations/${convoResponse.body.id}/users`)
+      .send({ user_id: userResponse3.id })
+      .set('Accept', 'application/json')
+      .set('Authorization', `${loginResponse1.body.token}`);
+
+    expect(response.status).toBe(200);
+    expect(response.body.user_id).toEqual(userResponse3.id);
+
+    const convoGetUsersResponse2 = await request(app)
+      .get(`/conversations/${convoResponse.body.id}/users`)
+      .set('Accept', 'application/json')
+      .set('Authorization', `${loginResponse1.body.token}`);
+
+    expect(convoGetUsersResponse2.status).toBe(200);
+    expect(convoGetUsersResponse2.body.length).toBe(2);
+    expect(convoGetUsersResponse2.body).toContainEqual({
+      id: userResponse1.id,
+      username: userResponse1.username,
+    });
+    expect(convoGetUsersResponse2.body).toContainEqual({
+      id: userResponse2.id,
+      username: userResponse2.username,
+    });
+    expect(convoGetUsersResponse2.body).not.toContainEqual({
+      id: userResponse3.id,
+      username: userResponse3.username,
+    });
+  });
+
+  it('when a conversation is deleted, all users should be removed from the conversation', async () => {
+    const authService = createAuthService(userStore);
+
+    const userResponse1 = await authService.signup(
+      `${usernamePrefix}1`,
+      'password'
+    );
+    userIDs.push(userResponse1.id);
+
+    const userResponse2 = await authService.signup(
+      `${usernamePrefix}2`,
+      'password'
+    );
+    userIDs.push(userResponse2.id);
+
+    const userResponse3 = await authService.signup(
+      `${usernamePrefix}3`,
+      'password'
+    );
+    userIDs.push(userResponse3.id);
+
+    const loginResponse1 = await request(app)
+      .post('/auth/login')
+      .send({ username: userResponse1.username, password: 'password' });
+
+    const convoResponse = await request(app)
+      .post('/conversations')
+      .send({
+        conversation: { name: 'test-convo' },
+        user_ids: [userResponse2.id, userResponse3.id],
+      })
+      .set('Accept', 'application/json')
+      .set('Authorization', `${loginResponse1.body.token}`);
+    conversationIDs.push(convoResponse.body.id);
+
+    const convoGetUsersResponse1 = await request(app)
+      .get(`/conversations/${convoResponse.body.id}/users`)
+      .set('Accept', 'application/json')
+      .set('Authorization', `${loginResponse1.body.token}`);
+
+    expect(convoGetUsersResponse1.status).toBe(200);
+    expect(convoGetUsersResponse1.body.length).toBe(3);
+    expect(convoGetUsersResponse1.body).toContainEqual({
+      id: userResponse1.id,
+      username: userResponse1.username,
+    });
+    expect(convoGetUsersResponse1.body).toContainEqual({
+      id: userResponse2.id,
+      username: userResponse2.username,
+    });
+    expect(convoGetUsersResponse1.body).toContainEqual({
+      id: userResponse3.id,
+      username: userResponse3.username,
+    });
+
+    const response = await request(app)
+      .delete(`/conversations/${convoResponse.body.id}`)
+      .set('Accept', 'application/json')
+      .set('Authorization', `${loginResponse1.body.token}`);
+
+    expect(response.status).toBe(200);
+    expect(response.body.id).toEqual(convoResponse.body.id);
+
+    const convoGetUsersResponse2 = await request(app)
+      .get(`/conversations/${convoResponse.body.id}/users`)
+      .set('Accept', 'application/json')
+      .set('Authorization', `${loginResponse1.body.token}`);
+
+    expect(convoGetUsersResponse2.status).toBe(404);
+
+    const user1 = await db
+      .selectFrom('conversation_user')
+      .where('user_id', '=', userResponse1.id)
+      .where('conversation_id', '=', convoResponse.body.id)
+      .selectAll()
+      .executeTakeFirst();
+
+    expect(user1).toBeUndefined();
+
+    const user2 = await db
+      .selectFrom('conversation_user')
+      .where('user_id', '=', userResponse2.id)
+      .where('conversation_id', '=', convoResponse.body.id)
+      .selectAll()
+      .executeTakeFirst();
+
+    expect(user2).toBeUndefined();
+
+    const user3 = await db
+      .selectFrom('conversation_user')
+      .where('user_id', '=', userResponse3.id)
+      .where('conversation_id', '=', convoResponse.body.id)
+      .selectAll()
+      .executeTakeFirst();
+
+    expect(user3).toBeUndefined();
   });
 });

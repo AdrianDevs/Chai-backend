@@ -1,5 +1,4 @@
 import asyncHandler from 'express-async-handler';
-import { Message, NewMessage } from '@/database/types/message';
 import { CustomError } from '@/errors';
 
 import { Info } from './types';

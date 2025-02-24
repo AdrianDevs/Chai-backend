@@ -57,11 +57,22 @@ class Store implements ConversationMessageStoreInterface {
   public addMessageToConversation = async (
     message: NewMessage
   ): Promise<Message | undefined> => {
-    return await db
-      .insertInto('message')
-      .values(message)
-      .returningAll()
-      .executeTakeFirst();
+    return await db.transaction().execute(async (trx) => {
+      const result = await trx
+        .insertInto('message')
+        .values(message)
+        .returningAll()
+        .executeTakeFirstOrThrow();
+
+      await trx
+        .updateTable('conversation_user')
+        .set({ last_read_message_id: result.id })
+        .where('conversation_id', '=', message.conversation_id)
+        .where('user_id', '=', message.user_id)
+        .execute();
+
+      return result;
+    });
   };
 }
 
