@@ -71,7 +71,7 @@ $ make up
 
 - VS Code
 - GitHub
-- Type checking with `TypeScript`
+- Typechecking with `TypeScript`
 - Environmental variables with `dotenv`
 - Formatting with `Prettier`
 - Linting with `ESLint`
@@ -96,7 +96,7 @@ $ make up
 
 - Containerisation with `Docker Compose`
 - File Storage with `MinIO` [TODO]
-- Reverse Proxy with `NGINX` [TODO]
+- Reverse Proxy with `ngrok` [TODO]
 
 ## Hosting (Production)
 
