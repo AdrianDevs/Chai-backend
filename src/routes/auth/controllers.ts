@@ -54,14 +54,12 @@ class Controller {
         return;
       }
 
-      res
-        .status(200)
-        .json({
-          id: userAndToken.id,
-          username: userAndToken.username,
-          token: userAndToken.token,
-          expiresIn: userAndToken.expires,
-        });
+      res.status(200).json({
+        id: userAndToken.id,
+        username: userAndToken.username,
+        token: userAndToken.token,
+        expiresIn: userAndToken.expires,
+      });
     }
   );
 }

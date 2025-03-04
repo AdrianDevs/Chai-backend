@@ -6,6 +6,7 @@ export interface UserServiceInterface {
   findUserById: (id: number) => Promise<User | undefined>;
   findUserByUsername: (username: string) => Promise<User | undefined>;
   findUsersByUsernames: (usernames: string[]) => Promise<User[]>;
+  deleteUser: (id: number) => Promise<User | undefined>;
 }
 
 class Controller {
@@ -98,6 +99,29 @@ class Controller {
       );
     }
   );
+
+  public deleteUser = asyncHandler(async (req: Request, res: Response) => {
+    const id = parseInt(req.params.id);
+
+    if (isNaN(id)) {
+      res.status(400).json({ message: 'Invalid user_id' });
+      return;
+    }
+
+    if (id !== req.user?.id) {
+      res.status(403).json({ message: 'Forbidden' });
+      return;
+    }
+
+    const user = await this.service.deleteUser(id);
+
+    if (!user) {
+      res.status(404).json({ message: 'User not found' });
+      return;
+    }
+
+    res.status(200).json({ message: 'User deleted' });
+  });
 }
 
 const createController = (service: UserServiceInterface) => {

@@ -61,11 +61,64 @@ class Store implements UserStoreInterface {
   };
 
   public deleteUser = async (id: number): Promise<User | undefined> => {
-    return await db
-      .deleteFrom('user')
-      .where('id', '=', id)
-      .returningAll()
-      .executeTakeFirst();
+    return await db.transaction().execute(async (trx) => {
+      let user = await trx
+        .selectFrom('user')
+        .where('id', '=', id)
+        .selectAll()
+        .executeTakeFirst();
+
+      if (!user) {
+        return undefined;
+      }
+
+      // Get all conversations the user is in
+      const conversations = await trx
+        .selectFrom('conversation_user')
+        .where('user_id', '=', id)
+        .selectAll()
+        .execute();
+
+      if (conversations.length > 0) {
+        // If there are any conversations that only have the user, delete the conversation
+        for (const conversation of conversations) {
+          const conversationUsers = await trx
+            .selectFrom('conversation_user')
+            .where('conversation_id', '=', conversation.conversation_id)
+            .selectAll()
+            .execute();
+
+          if (
+            conversationUsers.length === 1 &&
+            conversationUsers[0].user_id === id
+          ) {
+            await trx
+              .deleteFrom('conversation')
+              .where('id', '=', conversation.conversation_id)
+              .execute();
+          }
+        }
+
+        // Delete conversation users for the user
+        await trx
+          .deleteFrom('conversation_user')
+          .where('user_id', '=', id)
+          .execute();
+      }
+
+      // Delete the user
+      user = await trx
+        .deleteFrom('user')
+        .where('id', '=', id)
+        .returningAll()
+        .executeTakeFirst();
+
+      if (!user) {
+        throw new Error('User not found');
+      }
+
+      return user;
+    });
   };
 }
 

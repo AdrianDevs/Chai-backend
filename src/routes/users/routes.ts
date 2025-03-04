@@ -18,5 +18,6 @@ router.get('/validate', controller.validateUsernameStatus);
 router.use(checkAuthenticated);
 router.get('/search', controller.findUsersFromUsernames);
 router.get('/:id', controller.findUserById);
+router.delete('/:id', controller.deleteUser);
 
 export default router;

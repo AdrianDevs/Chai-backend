@@ -34,6 +34,10 @@ class Service implements UserServiceInterface {
     const users = await this.store.findUsersByUsernames(usernames);
     return users.filter((user) => user !== undefined) as User[];
   };
+
+  public deleteUser = async (id: number): Promise<User | undefined> => {
+    return await this.store.deleteUser(id);
+  };
 }
 
 const createService = (store: UserStoreInterface) => {
