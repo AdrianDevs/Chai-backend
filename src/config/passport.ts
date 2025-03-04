@@ -15,6 +15,12 @@ const options: StrategyOptionsWithoutRequest = {
   algorithms: ['RS256'],
 };
 
+/**
+ * JWT Strategy
+ * This strategy is used to authenticate users based on their JWT token
+ * @param {StrategyOptionsWithoutRequest} options - JWT Strategy Options
+ * @param {Function} verify - JWT Strategy Verify Function
+ */
 export const jwtStrategy = new Strategy(options, (jwtPayload, done) => {
   // console.log('JWT STRATEGY');
   // console.log('- jwtPayload', jwtPayload);

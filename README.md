@@ -110,17 +110,19 @@ $ make up
 
 ## TODO
 
+- Allow users to delete their profile and data
+- Implement CSRF
+- WebSockets
+- JWT Refresh Tokens
+- JWT black listing
+- Email verification
+- Local email testing
 - Changelog
 - Google Analytics
 - Logging, APM (tracing), and Metrics
 - Sentry
 - Mixpanel
-- JWT Refresh Tokens
-- JWT black listing
-- Email verification
-- Local email testing
 - Auth with `Supertokens` or `Zitadel`
 - Webhooks
-- WebSockets
 - RabbitMQ
 - Snowflake

@@ -38,6 +38,16 @@ class Store implements UserStoreInterface {
       .executeTakeFirst();
   };
 
+  public findUsersByUsernames = async (
+    usernames: string[]
+  ): Promise<User[]> => {
+    return await db
+      .selectFrom('user')
+      .selectAll()
+      .where('username', 'in', usernames)
+      .execute();
+  };
+
   public updateUser = async (
     id: number,
     updateWith: Partial<User>

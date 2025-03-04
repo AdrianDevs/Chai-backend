@@ -16,6 +16,5 @@
   // "html.completion.attributeDefaultValue": "doublequotes"
   "code-runner.executorMap": {
     "typescript": "ts-node --esm"
-  },
-  "makefile.configureOnOpen": false
+  }
 }

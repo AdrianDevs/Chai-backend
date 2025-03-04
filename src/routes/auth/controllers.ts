@@ -56,7 +56,12 @@ class Controller {
 
       res
         .status(200)
-        .json({ token: userAndToken.token, expiresIn: userAndToken.expires });
+        .json({
+          id: userAndToken.id,
+          username: userAndToken.username,
+          token: userAndToken.token,
+          expiresIn: userAndToken.expires,
+        });
     }
   );
 }

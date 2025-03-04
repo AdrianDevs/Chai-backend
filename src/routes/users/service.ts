@@ -6,6 +6,7 @@ export interface UserStoreInterface {
   createUser: (user: NewUser) => Promise<User>;
   findUserById: (id: number) => Promise<User | undefined>;
   findUserByUsername: (username: string) => Promise<User | undefined>;
+  findUsersByUsernames: (username: string[]) => Promise<Array<User>>;
   updateUser: (id: number, updateWith: Partial<User>) => Promise<User>;
   deleteUser: (id: number) => Promise<User | undefined>;
 }
@@ -25,6 +26,13 @@ class Service implements UserServiceInterface {
     username: string
   ): Promise<User | undefined> => {
     return await this.store.findUserByUsername(username);
+  };
+
+  public findUsersByUsernames = async (
+    usernames: string[]
+  ): Promise<User[]> => {
+    const users = await this.store.findUsersByUsernames(usernames);
+    return users.filter((user) => user !== undefined) as User[];
   };
 }
 

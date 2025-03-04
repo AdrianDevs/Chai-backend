@@ -4,8 +4,6 @@ import path from 'node:path';
 import express from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
-import swaggerJsdoc from 'swagger-jsdoc';
-import swaggerUI from 'swagger-ui-express';
 import {
   handleUnauthorizedError,
   handleUnknownError,
@@ -13,7 +11,6 @@ import {
 import routes from '@/routes';
 import { jwtStrategy } from './config/passport';
 import passport from 'passport';
-import apiOptions from './config/swagger_api';
 
 console.log('[server]: Starting server');
 
@@ -28,6 +25,8 @@ const corsOptions = {
   origin: process.env.CORS_ORIGIN,
   optionsSuccessStatus: 200,
 };
+console.log('[cors]: corsOptions: ', corsOptions);
+// app.options('*', cors(corsOptions)); // include before other routes
 app.use(cors(corsOptions));
 
 passport.use(jwtStrategy);
@@ -37,11 +36,6 @@ app.use(express.urlencoded({ extended: true }));
 app.use(morgan('dev'));
 app.use(express.static(path.join(__dirname, 'public')));
 
-app.use(
-  '/api-swagger',
-  swaggerUI.serve,
-  swaggerUI.setup(swaggerJsdoc(apiOptions))
-);
 app.get('/api-spec', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'api-docs.html'));
 });

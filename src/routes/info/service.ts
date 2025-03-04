@@ -20,8 +20,9 @@ class Service implements InfoServiceInterface {
   }
 
   public findInfo = async (): Promise<Info> => {
-    const title = 'Chai API';
-    const description = 'RESTful API for the Chai chat app';
+    const title = 'Chai Chat App';
+    const description =
+      'Chai a chat app written in React, Node.js, Express, and TypeScript';
     const version = '1.0.0';
     const license = {
       name: 'ISC',
@@ -41,7 +42,7 @@ class Service implements InfoServiceInterface {
       numOfUsers,
       numOfConversations,
       numOfMessages,
-      lastMessageAt: lastMessageAt?.toISOString() || '',
+      lastMessageAt: lastMessageAt?.toISOString() || 'Who knows',
     };
   };
 }
