@@ -184,11 +184,21 @@ describe('GET /users/validate', () => {
 describe('DELETE /users/:id', () => {
   const usernamePrefix = 'test-user-delete-user';
   let userIDs: number[];
+  const conversationIDs: number[] = [];
 
   afterEach(async () => {
     if (userIDs && userIDs.length > 0) {
       for (const userID of userIDs) {
         await db.deleteFrom('user').where('id', '=', userID).execute();
+      }
+    }
+    if (conversationIDs && conversationIDs.length > 0) {
+      for (const conversationID of conversationIDs) {
+        await db
+          .deleteFrom('conversation')
+          .where('id', '=', conversationID)
+          .returningAll()
+          .executeTakeFirst();
       }
     }
   });
@@ -304,6 +314,7 @@ describe('DELETE /users/:id', () => {
         conversation: { name: 'Test Conversation' },
         user_ids: [userResponse2.id, userResponse3.id],
       });
+    conversationIDs.push(conversationResponse.body.id);
 
     expect(conversationResponse.statusCode).toBe(201);
     expect(conversationResponse.body.id).toBeDefined();
@@ -361,6 +372,7 @@ describe('DELETE /users/:id', () => {
         conversation: { name: 'Test Conversation' },
         user_ids: [userResponse2.id],
       });
+    conversationIDs.push(conversationResponse1.body.id);
 
     expect(conversationResponse1.statusCode).toBe(201);
     expect(conversationResponse1.body.id).toBeDefined();
