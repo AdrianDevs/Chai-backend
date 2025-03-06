@@ -4,7 +4,6 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { db } from '../../../database/database';
 import createAuthService from '../../auth/service';
 import userStore from '../../users/store';
-import e from 'express';
 
 describe('GET /conversations/:conversation_id/users', () => {
   const usernamePrefix = 'test-convo-user-user-';
