@@ -513,7 +513,7 @@ describe('DELETE /conversations/:id/users', () => {
       .send({ username: userResponse.username, password: 'password' });
 
     const response = await request(app)
-      .delete('/conversations/wrong/users')
+      .delete(`/conversations/wrong/users/${userResponse.id}`)
       .set('Accept', 'application/json')
       .set('Authorization', `${loginResponse.body.token}`);
 
@@ -534,7 +534,7 @@ describe('DELETE /conversations/:id/users', () => {
       .send({ username: userResponse.username, password: 'password' });
 
     const response = await request(app)
-      .delete('/conversations/1/users')
+      .delete('/conversations/1/users/wrong')
       .set('Accept', 'application/json')
       .set('Authorization', `${loginResponse.body.token}`);
 
@@ -593,8 +593,9 @@ describe('DELETE /conversations/:id/users', () => {
     userIDs.push(userResponse3.id);
 
     const response = await request(app)
-      .delete(`/conversations/${convoResponse.body.id}/users`)
-      .send({ user_id: userResponse3.id })
+      .delete(
+        `/conversations/${convoResponse.body.id}/users/${userResponse3.id}`
+      )
       .set('Accept', 'application/json')
       .set('Authorization', `${loginResponse1.body.token}`);
 
@@ -646,8 +647,9 @@ describe('DELETE /conversations/:id/users', () => {
       .send({ username: userResponse3.username, password: 'password' });
 
     const response = await request(app)
-      .delete(`/conversations/${convoResponse.body.id}/users`)
-      .send({ user_id: userResponse1.id })
+      .delete(
+        `/conversations/${convoResponse.body.id}/users/${userResponse1.id}`
+      )
       .set('Accept', 'application/json')
       .set('Authorization', `${loginResponse3.body.token}`);
 
@@ -732,8 +734,9 @@ describe('DELETE /conversations/:id/users', () => {
     });
 
     const response = await request(app)
-      .delete(`/conversations/${convoResponse.body.id}/users`)
-      .send({ user_id: userResponse3.id })
+      .delete(
+        `/conversations/${convoResponse.body.id}/users/${userResponse3.id}`
+      )
       .set('Accept', 'application/json')
       .set('Authorization', `${loginResponse1.body.token}`);
 
@@ -757,7 +760,7 @@ describe('DELETE /conversations/:id/users', () => {
     });
   });
 
-  it("when a user is delted from a conversation, the user should not appear in the conversation's users list", async () => {
+  it("when a user is deleted from a conversation, the user should not appear in the conversation's users list", async () => {
     const authService = createAuthService(userStore);
 
     const userResponse1 = await authService.signup(
@@ -813,8 +816,9 @@ describe('DELETE /conversations/:id/users', () => {
     });
 
     const response = await request(app)
-      .delete(`/conversations/${convoResponse.body.id}/users`)
-      .send({ user_id: userResponse3.id })
+      .delete(
+        `/conversations/${convoResponse.body.id}/users/${userResponse3.id}`
+      )
       .set('Accept', 'application/json')
       .set('Authorization', `${loginResponse1.body.token}`);
 

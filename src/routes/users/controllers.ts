@@ -101,19 +101,24 @@ class Controller {
   );
 
   public deleteUser = asyncHandler(async (req: Request, res: Response) => {
-    const id = parseInt(req.params.id);
+    // const id = parseInt(req.params.id);
 
-    if (isNaN(id)) {
+    // if (isNaN(id)) {
+    //   res.status(400).json({ message: 'Invalid user_id' });
+    //   return;
+    // }
+
+    // if (id !== req.user?.id) {
+    //   res.status(403).json({ message: 'Forbidden' });
+    //   return;
+    // }
+
+    if (!req.user?.id) {
       res.status(400).json({ message: 'Invalid user_id' });
       return;
     }
 
-    if (id !== req.user?.id) {
-      res.status(403).json({ message: 'Forbidden' });
-      return;
-    }
-
-    const user = await this.service.deleteUser(id);
+    const user = await this.service.deleteUser(req.user.id);
 
     if (!user) {
       res.status(404).json({ message: 'User not found' });

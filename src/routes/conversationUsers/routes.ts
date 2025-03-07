@@ -15,6 +15,6 @@ router.use(checkAuthenticated);
 
 router.get('/', controller.getConversationUsers);
 router.post('/', controller.addUserToConversation);
-router.delete('/', controller.removeUserFromConversation);
+router.delete('/:id', controller.removeUserFromConversation);
 
 export default router;

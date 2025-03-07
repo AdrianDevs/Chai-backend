@@ -104,7 +104,7 @@ class Controller {
   public removeUserFromConversation = asyncHandler(async (req, res) => {
     const userID = req.user?.id;
     const convoID = parseInt(req.params.conversation_id);
-    const userToRemoveID = parseInt(req.body.user_id);
+    const userToRemoveID = parseInt(req.params.id);
 
     if (!userID) {
       res.status(401).json({ message: 'Unauthorized' });

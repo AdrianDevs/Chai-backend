@@ -208,34 +208,6 @@ describe('DELETE /users/:id', () => {
     expect(response.statusCode).toBe(401);
   });
 
-  it('should not be able to delete user if not authorized', async () => {
-    const authService = createAuthService(userStore);
-
-    const userResponse1 = await authService.signup(
-      `${usernamePrefix}1`,
-      'password'
-    );
-    userIDs = [userResponse1.id];
-
-    const userResponse2 = await authService.signup(
-      `${usernamePrefix}2`,
-      'password'
-    );
-    userIDs.push(userResponse2.id);
-
-    const loginResponse = await authService.login(
-      userResponse1.username,
-      'password'
-    );
-
-    const response = await request(app)
-      .delete(`/users/${userResponse2.id}`)
-      .set('Accept', 'application/json')
-      .set('Authorization', `${loginResponse.token}`);
-
-    expect(response.statusCode).toBe(403);
-  });
-
   it('should be able to delete user if authorized', async () => {
     const authService = createAuthService(userStore);
     const userResponse = await authService.signup(
@@ -250,7 +222,7 @@ describe('DELETE /users/:id', () => {
     );
 
     const response = await request(app)
-      .delete(`/users/${userResponse.id}`)
+      .delete('/users/me')
       .set('Accept', 'application/json')
       .set('Authorization', `${loginResponse.token}`);
 
@@ -272,7 +244,7 @@ describe('DELETE /users/:id', () => {
     );
 
     const response = await request(app)
-      .delete(`/users/${userResponse.id}`)
+      .delete('/users/me')
       .set('Accept', 'application/json')
       .set('Authorization', `${loginResponse.token}`);
 
@@ -322,7 +294,7 @@ describe('DELETE /users/:id', () => {
     const conversationID = conversationResponse.body.id;
 
     const response = await request(app)
-      .delete(`/users/${userResponse1.id}`)
+      .delete('/users/me')
       .set('Accept', 'application/json')
       .set('Authorization', `${loginResponse1.token}`);
 
@@ -398,7 +370,7 @@ describe('DELETE /users/:id', () => {
     expect(conversationUsers1.length).toBe(2);
 
     const deleteResponse1 = await request(app)
-      .delete(`/users/${userResponse1.id}`)
+      .delete('/users/me')
       .set('Accept', 'application/json')
       .set('Authorization', `${loginResponse1.token}`);
 
@@ -431,7 +403,7 @@ describe('DELETE /users/:id', () => {
 
     // Delete user 2
     const deleteResponse2 = await request(app)
-      .delete(`/users/${userResponse2.id}`)
+      .delete('/users/me')
       .set('Accept', 'application/json')
       .set('Authorization', `${loginResponse2.token}`);
 
