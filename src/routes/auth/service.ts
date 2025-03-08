@@ -6,8 +6,9 @@ import {
   issueJWT,
   JwtToken,
   validatePassword,
-} from '@/utils';
+} from '@/auth/helpers';
 import { CustomError } from '@/errors';
+import { RefreshTokenManager } from '@/cache/helpers';
 
 class Service implements AuthServiceInterface {
   private store: UserStoreInterface;
@@ -16,10 +17,7 @@ class Service implements AuthServiceInterface {
     this.store = store;
   }
 
-  public signup = async (
-    username: string,
-    password: string
-  ): Promise<User & JwtToken> => {
+  public signup = async (username: string, password: string): Promise<User> => {
     const saltHash = generatePassword(password);
 
     const userExists = await this.store.findUserByUsername(username);
@@ -36,8 +34,8 @@ class Service implements AuthServiceInterface {
       salt,
     });
 
-    const tokenObject = issueJWT(user);
-    return { ...user, ...tokenObject };
+    // const tokenObject = issueJWT(user);
+    return user;
   };
 
   public login = async (
@@ -57,6 +55,18 @@ class Service implements AuthServiceInterface {
     }
 
     const tokenObject = issueJWT(user);
+
+    if (!tokenObject.refreshToken || !tokenObject.refreshTokenExpires) {
+      throw new CustomError(500, 'Refresh token not found');
+    }
+
+    const refreshTokenManager = await RefreshTokenManager.getInstance();
+    await refreshTokenManager.storeRefreshToken(
+      user.id,
+      tokenObject.refreshToken,
+      tokenObject.refreshTokenExpires.getTime()
+    );
+
     return { ...user, ...tokenObject };
   };
 
@@ -68,6 +78,48 @@ class Service implements AuthServiceInterface {
     username: string
   ): Promise<User | undefined> => {
     return await this.store.findUserByUsername(username);
+  };
+
+  public refreshToken = async (
+    userID: number,
+    refreshToken: string
+  ): Promise<JwtToken> => {
+    const refreshTokenManager = await RefreshTokenManager.getInstance();
+
+    const isValid = await refreshTokenManager.validateRefreshToken(
+      userID,
+      refreshToken
+    );
+
+    if (!isValid) {
+      throw new CustomError(401, 'Invalid refresh token');
+    }
+
+    const user = await this.store.findUserById(userID);
+
+    if (!user) {
+      throw new CustomError(404, 'User not found');
+    }
+
+    const tokenObject = issueJWT(user);
+
+    if (!tokenObject.refreshToken || !tokenObject.refreshTokenExpires) {
+      throw new CustomError(500, 'Refresh token not found');
+    }
+
+    await refreshTokenManager.invalidateRefreshToken(userID);
+    await refreshTokenManager.storeRefreshToken(
+      userID,
+      tokenObject.refreshToken,
+      tokenObject.refreshTokenExpires.getTime()
+    );
+
+    return tokenObject;
+  };
+
+  public revokeToken = async (userID: number): Promise<void> => {
+    const refreshTokenManager = await RefreshTokenManager.getInstance();
+    await refreshTokenManager.invalidateRefreshToken(userID);
   };
 }
 

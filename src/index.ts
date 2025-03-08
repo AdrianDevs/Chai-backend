@@ -9,7 +9,7 @@ import {
   handleUnknownError,
 } from '@/middleware/middleware';
 import routes from '@/routes';
-import { jwtStrategy } from './config/passport';
+import { jwtStrategy } from './auth/passport';
 import passport from 'passport';
 
 console.log('[server]: Starting server');
@@ -36,7 +36,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(morgan('dev'));
 app.use(express.static(path.join(__dirname, 'public')));
 
-app.get('/api-spec', (req, res) => {
+app.get('/api-docs', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'api-docs.html'));
 });
 

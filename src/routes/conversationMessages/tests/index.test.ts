@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { db } from '../../../database/database';
 import createAuthService from '../../auth/service';
 import userStore from '../../users/store';
+import { RefreshTokenManager } from '../../../cache/helpers';
 
 describe('GET /conversations/:conversation_id/messages', () => {
   const usernamePrefix = 'test-convo-msg-user-';
@@ -14,6 +15,8 @@ describe('GET /conversations/:conversation_id/messages', () => {
     if (userIDs && userIDs.length > 0) {
       for (const userID of userIDs) {
         await db.deleteFrom('user').where('id', '=', userID).execute();
+        const refreshTokenManager = await RefreshTokenManager.getInstance();
+        refreshTokenManager.invalidateRefreshToken(userID);
       }
     }
     if (conversationIDs && conversationIDs.length > 0) {
@@ -321,6 +324,8 @@ describe('POST /conversations/:conversation_id/messages', () => {
     if (userIDs && userIDs.length > 0) {
       for (const userID of userIDs) {
         await db.deleteFrom('user').where('id', '=', userID).execute();
+        const refreshTokenManager = await RefreshTokenManager.getInstance();
+        refreshTokenManager.invalidateRefreshToken(userID);
       }
     }
     if (conversationIDs && conversationIDs.length > 0) {

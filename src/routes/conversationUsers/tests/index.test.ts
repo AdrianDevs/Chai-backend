@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { db } from '../../../database/database';
 import createAuthService from '../../auth/service';
 import userStore from '../../users/store';
+import { RefreshTokenManager } from '../../../cache/helpers';
 
 describe('GET /conversations/:conversation_id/users', () => {
   const usernamePrefix = 'test-convo-user-user-';
@@ -14,6 +15,8 @@ describe('GET /conversations/:conversation_id/users', () => {
     if (userIDs && userIDs.length > 0) {
       for (const userID of userIDs) {
         await db.deleteFrom('user').where('id', '=', userID).execute();
+        const refreshTokenManager = await RefreshTokenManager.getInstance();
+        refreshTokenManager.invalidateRefreshToken(userID);
       }
     }
     if (conversationIDs && conversationIDs.length > 0) {
@@ -177,6 +180,8 @@ describe('POST /conversations/:id/users', () => {
     if (userIDs && userIDs.length > 0) {
       for (const userID of userIDs) {
         await db.deleteFrom('user').where('id', '=', userID).execute();
+        const refreshTokenManager = await RefreshTokenManager.getInstance();
+        refreshTokenManager.invalidateRefreshToken(userID);
       }
     }
     if (conversationIDs && conversationIDs.length > 0) {
@@ -486,6 +491,8 @@ describe('DELETE /conversations/:id/users', () => {
     if (userIDs && userIDs.length > 0) {
       for (const userID of userIDs) {
         await db.deleteFrom('user').where('id', '=', userID).execute();
+        const refreshTokenManager = await RefreshTokenManager.getInstance();
+        refreshTokenManager.invalidateRefreshToken(userID);
       }
     }
     if (conversationIDs && conversationIDs.length > 0) {

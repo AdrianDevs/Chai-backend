@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import createAuthService from '../../auth/service';
 import userStore from '../../users/store';
 import { db } from '../../../database/database';
+import { RefreshTokenManager } from '../../../cache/helpers';
 
 describe('POST /conversations', () => {
   const userIDs: number[] = [];
@@ -13,6 +14,8 @@ describe('POST /conversations', () => {
     if (userIDs && userIDs.length > 0) {
       for (const userID of userIDs) {
         await db.deleteFrom('user').where('id', '=', userID).execute();
+        const refreshTokenManager = await RefreshTokenManager.getInstance();
+        refreshTokenManager.invalidateRefreshToken(userID);
       }
     }
     if (conversationIDs && conversationIDs.length > 0) {
@@ -174,6 +177,8 @@ describe('GET /conversations', () => {
     if (userIDs && userIDs.length > 0) {
       for (const userID of userIDs) {
         await db.deleteFrom('user').where('id', '=', userID).execute();
+        const refreshTokenManager = await RefreshTokenManager.getInstance();
+        refreshTokenManager.invalidateRefreshToken(userID);
       }
     }
     if (conversationIDs && conversationIDs.length > 0) {
@@ -277,6 +282,8 @@ describe('GET /conversations/{conversation_id}', () => {
     if (userIDs && userIDs.length > 0) {
       for (const userID of userIDs) {
         await db.deleteFrom('user').where('id', '=', userID).execute();
+        const refreshTokenManager = await RefreshTokenManager.getInstance();
+        refreshTokenManager.invalidateRefreshToken(userID);
       }
     }
     if (conversationIDs && conversationIDs.length > 0) {
@@ -401,6 +408,8 @@ describe('PUT /conversations/{conversation_id}', () => {
     if (userIDs && userIDs.length > 0) {
       for (const userID of userIDs) {
         await db.deleteFrom('user').where('id', '=', userID).execute();
+        const refreshTokenManager = await RefreshTokenManager.getInstance();
+        refreshTokenManager.invalidateRefreshToken(userID);
       }
     }
     if (conversationIDs && conversationIDs.length > 0) {
@@ -557,6 +566,8 @@ describe('DELETE /conversations/{conversation_id}', () => {
     if (userIDs && userIDs.length > 0) {
       for (const userID of userIDs) {
         await db.deleteFrom('user').where('id', '=', userID).execute();
+        const refreshTokenManager = await RefreshTokenManager.getInstance();
+        refreshTokenManager.invalidateRefreshToken(userID);
       }
     }
     if (conversationIDs && conversationIDs.length > 0) {

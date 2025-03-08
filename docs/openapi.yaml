@@ -111,6 +111,47 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  /auth/refresh-token:
+    post:
+      tags: [Auth]
+      operationId: refreshToken
+      summary: Refresh a JWT token
+      security: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refreshToken:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Token'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /auth/revoke-token:
+    post:
+      tags: [Auth]
+      operationId: revokeToken
+      summary: Revoke a refresh token
+      responses:
+        '200':
+          description: OK
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /users/{id}:
     get:
       tags: [Users]
@@ -795,12 +836,20 @@ components:
       required:
         - token
         - expires
+        - refreshToken
+        - refreshTokenExpires
       properties:
         token:
           description: 'The JWT token'
           type: string
         expires:
           description: 'The token expiry date'
+          type: string
+        refreshToken:
+          description: 'The refresh token'
+          type: string
+        refreshTokenExpires:
+          description: 'The refresh token expiry date'
           type: string
     Error:
       type: object

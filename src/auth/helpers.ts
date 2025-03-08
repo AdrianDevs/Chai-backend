@@ -61,7 +61,35 @@ export const generatePassword = (password: string) => {
 export type JwtToken = {
   token: string;
   expires: string;
+  refreshToken?: string;
+  refreshTokenExpires?: Date;
 };
+
+/**
+ * Generates a refresh token for the user by combining a random string with the user ID
+ * The format is: base64(userId)_randomBytes
+ * @param userId - The user's ID to associate with the refresh token
+ * @returns The generated refresh token
+ */
+export function generateRefreshToken(userId: string | number): string {
+  const randomBytes = crypto.randomBytes(32).toString('hex');
+  const userIdBase64 = Buffer.from(userId.toString()).toString('base64');
+  return `${userIdBase64}_${randomBytes}`;
+}
+
+/**
+ * Extracts the user ID from a refresh token
+ * @param token - The refresh token
+ * @returns The user ID or null if the token is invalid
+ */
+export function extractUserIdFromRefreshToken(token: string): string | null {
+  try {
+    const [userIdBase64] = token.split('_');
+    return Buffer.from(userIdBase64, 'base64').toString();
+  } catch {
+    return null;
+  }
+}
 
 /**
  * @param {*} user - The user object.  We need this to set the JWT `sub` payload property to the database user ID
@@ -70,12 +98,12 @@ export function issueJWT(user: User): JwtToken {
   const _id = user.id;
   const _user = { id: user.id, username: user.username };
 
-  const expiresIn = '1d';
+  const expiresIn = 5; // 5 seconds
+  const refreshTokenExpiresIn = 7 * 24 * 60 * 60; // 7 days in seconds
 
   const payload = {
     sub: _id,
     user: _user,
-    iat: Date.now(),
   };
 
   const pathToPublicKey = path.join(__dirname, '../../keys', 'jwt_private.key');
@@ -86,9 +114,17 @@ export function issueJWT(user: User): JwtToken {
     algorithm: 'RS256',
   });
 
+  // Generate refresh token
+  const refreshToken = generateRefreshToken(_id);
+  const refreshTokenExpires = new Date(
+    Date.now() + refreshTokenExpiresIn * 1000
+  );
+
   return {
     token: 'Bearer ' + signedToken,
-    expires: expiresIn,
+    expires: expiresIn.toString(),
+    refreshToken,
+    refreshTokenExpires,
   };
 }
 
@@ -120,13 +156,11 @@ export const checkAuthenticated = async (
       // If authentication failed, `user` will be set to false. If an exception occurred, `err` will be set.
 
       if (err) {
-        // console.log('-- have error');
         const error = new CustomError(401, 'Autehntication failed');
         return next(error);
       }
 
       if (!user) {
-        // console.log('-- have no user');
         const error = new CustomError(401, 'Unauthorized');
         return next(error);
       }

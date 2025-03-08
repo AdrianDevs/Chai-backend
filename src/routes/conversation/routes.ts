@@ -4,7 +4,7 @@ import createService from './service';
 import convoStore from './store';
 import userConvoStore from '../conversationUsers/store';
 import { contextLoggingMiddleware } from '@/middleware/middleware';
-import { checkAuthenticated } from '@/utils';
+import { checkAuthenticated } from '@/auth/helpers';
 
 const router = express.Router();
 const service = createService(convoStore, userConvoStore);
