@@ -1,10 +1,10 @@
 import { RedisClientType } from 'redis';
 import RedisClientSingleton from './setup';
 
-interface StoredRefreshToken {
-  token: string;
-  expiresAt: number;
-}
+// interface StoredRefreshToken {
+//   token: string;
+//   expiresAt: number;
+// }
 
 export class RefreshTokenManager {
   private static REFRESH_TOKEN_PREFIX = 'refresh_token:';
@@ -36,35 +36,37 @@ export class RefreshTokenManager {
     if (!this.client) throw new Error('Redis client not initialized');
 
     const key = `${RefreshTokenManager.REFRESH_TOKEN_PREFIX}${userId}`;
-    const tokenData: StoredRefreshToken = {
-      token: refreshToken,
-      expiresAt: expiresIn,
-    };
+    // const tokenData: StoredRefreshToken = {
+    //   token: refreshToken,
+    //   expiresAt: expiresIn,
+    // };
 
-    await this.client.set(key, JSON.stringify(tokenData), {
+    await this.client.set(key, refreshToken, {
       EX: expiresIn,
     });
   }
 
   /**
-   * Gets the expiration time of a refresh token
+   * Sets the expiration time of a refresh token
    * @param userId - The user's ID
-   * @returns The expiration time in milliseconds since epoch
+   * @param expiresIn - Expiration time in milliseconds since epoch
    */
-  public async getRefreshTokenExpiration(
-    userId: string | number
-  ): Promise<number | null> {
+  public async setRefreshTokenExpiration(
+    userId: string | number,
+    expiresIn: number
+  ): Promise<void> {
     if (!this.client) throw new Error('Redis client not initialized');
 
     const key = `${RefreshTokenManager.REFRESH_TOKEN_PREFIX}${userId}`;
-    const storedTokenData = await this.client.get(key);
+    const token = await this.client.get(key);
 
-    if (!storedTokenData) {
-      return null;
+    if (!token) {
+      throw new Error('Refresh token not found');
     }
 
-    const parsedTokenData: StoredRefreshToken = JSON.parse(storedTokenData);
-    return parsedTokenData.expiresAt;
+    await this.client.set(key, token, {
+      EX: expiresIn,
+    });
   }
 
   /**
@@ -80,31 +82,13 @@ export class RefreshTokenManager {
     if (!this.client) throw new Error('Redis client not initialized');
 
     const key = `${RefreshTokenManager.REFRESH_TOKEN_PREFIX}${userId}`;
-    const storedTokenData = await this.client.get(key);
+    const token = await this.client.get(key);
 
-    if (!storedTokenData) {
+    if (!token) {
       return false;
     }
 
-    try {
-      const parsedTokenData: StoredRefreshToken = JSON.parse(storedTokenData);
-
-      // Check if token matches
-      if (parsedTokenData.token !== refreshToken) {
-        return false;
-      }
-
-      // Check if token is expired
-      if (Date.now() > parsedTokenData.expiresAt) {
-        // Token is expired, clean it up
-        await this.invalidateRefreshToken(userId);
-        return false;
-      }
-
-      return true;
-    } catch {
-      return false;
-    }
+    return token === refreshToken;
   }
 
   /**

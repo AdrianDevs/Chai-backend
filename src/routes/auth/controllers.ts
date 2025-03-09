@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from 'express';
 import asyncHandler from 'express-async-handler';
 import { User } from '@/database/types/user';
-import { JwtToken } from '@/auth/helpers';
+import { JwtToken, setRefreshTokenCookie } from '@/auth/helpers';
 import { CustomError } from '@/errors';
 
 export interface AuthServiceInterface {
@@ -56,6 +56,14 @@ class Controller {
         return;
       }
 
+      if (userAndToken.refreshToken && userAndToken.refreshTokenExpires) {
+        setRefreshTokenCookie(
+          res,
+          userAndToken.refreshToken,
+          userAndToken.refreshTokenExpires
+        );
+      }
+
       res.status(200).json({
         id: userAndToken.id,
         username: userAndToken.username,
@@ -70,16 +78,17 @@ class Controller {
   public refreshToken = asyncHandler(
     async (req: Request, res: Response, _next: NextFunction) => {
       const userID = parseInt(req.body.userID);
-      const refreshToken = req.headers['x-refresh-token'] as string;
+      const refreshTokenFromCookie = req.cookies?.refreshToken;
+      const refreshTokenFromHeader = req.headers['x-refresh-token'] as string;
 
-      if (!userID || !refreshToken) {
+      if (!userID || (!refreshTokenFromCookie && !refreshTokenFromHeader)) {
         res.status(401).json({ message: 'Unauthorized' });
         return;
       }
 
       const userAndToken = await this.service.refreshToken(
         userID,
-        refreshToken
+        refreshTokenFromCookie || refreshTokenFromHeader
       );
 
       if (!userAndToken) {
@@ -99,9 +108,8 @@ class Controller {
   public revokeToken = asyncHandler(
     async (req: Request, res: Response, _next: NextFunction) => {
       const userID = req.user?.id;
-      const refreshToken = req.headers['x-refresh-token'] as string;
 
-      if (!userID || !refreshToken) {
+      if (!userID) {
         res.status(401).json({ message: 'Unauthorized' });
         return;
       }

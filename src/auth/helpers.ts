@@ -56,11 +56,14 @@ export const generatePassword = (password: string) => {
 /**
  * This is the JWT token that is issued to the user upon successful login
  * The token is signed with the private key and the user ID is set as the payload
- * The token is set to expire in 1 day
+ * @param token - The JWT token
+ * @param expires - How long the token is valid for in seconds
+ * @param refreshToken - The refresh token
+ * @param refreshTokenExpires - The expiration date of the refresh token
  */
 export type JwtToken = {
   token: string;
-  expires: string;
+  expires: number;
   refreshToken?: string;
   refreshTokenExpires?: Date;
 };
@@ -93,12 +96,13 @@ export function extractUserIdFromRefreshToken(token: string): string | null {
 
 /**
  * @param {*} user - The user object.  We need this to set the JWT `sub` payload property to the database user ID
+ * @param tokenExpiresIn - The expiration time of the JWT token in seconds
  */
-export function issueJWT(user: User): JwtToken {
+export function issueJWT(user: User, tokenExpiresIn?: number): JwtToken {
   const _id = user.id;
   const _user = { id: user.id, username: user.username };
 
-  const expiresIn = 5; // 5 seconds
+  const expiresIn = tokenExpiresIn || 15 * 60; // 15 minutes
   const refreshTokenExpiresIn = 7 * 24 * 60 * 60; // 7 days in seconds
 
   const payload = {
@@ -122,10 +126,32 @@ export function issueJWT(user: User): JwtToken {
 
   return {
     token: 'Bearer ' + signedToken,
-    expires: expiresIn.toString(),
+    expires: expiresIn,
     refreshToken,
     refreshTokenExpires,
   };
+}
+
+/**
+ * Sets the refresh token cookie
+ * @param res - The response object
+ * @param refreshToken - The refresh token to set
+ * @returns The response object
+ */
+export function setRefreshTokenCookie(
+  res: Response,
+  refreshToken: string,
+  refreshTokenExpires: Date
+) {
+  res.cookie('refreshToken', refreshToken, {
+    httpOnly: true,
+    secure: process.env.ENV === 'PROD',
+    sameSite: process.env.ENV === 'PROD' ? 'strict' : 'lax',
+    path: '/auth/refresh-token',
+    expires: refreshTokenExpires,
+  });
+
+  return res;
 }
 
 /**

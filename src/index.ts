@@ -9,13 +9,15 @@ import {
   handleUnknownError,
 } from '@/middleware/middleware';
 import routes from '@/routes';
+import cookieParser from 'cookie-parser';
 import { jwtStrategy } from './auth/passport';
 import passport from 'passport';
 
 console.log('[server]: Starting server');
 
 dotenv.config({ path: process.env.ENV_FILE || '.env' });
-console.log('[env]: Environment: ', process.env.NODE_ENV);
+console.log('[env]: Environment: ', process.env.ENV);
+console.log('[env]: Node Environment: ', process.env.NODE_ENV);
 console.log('[cors]: cors-origin: ', process.env.CORS_ORIGIN);
 
 const app = express();
@@ -31,6 +33,7 @@ app.use(cors(corsOptions));
 
 passport.use(jwtStrategy);
 
+app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan('dev'));
@@ -45,7 +48,7 @@ app.use(routes);
 app.use(handleUnauthorizedError);
 app.use(handleUnknownError);
 
-if (process.env.NODE_ENV !== 'TEST') {
+if (process.env.ENV !== 'TEST') {
   app.listen(port, () => {
     console.log(`[server]: Server is running on at http://localhost:${port}`);
   });

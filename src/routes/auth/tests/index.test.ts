@@ -5,6 +5,8 @@ import { db } from '../../../database/database';
 import { RefreshTokenManager } from '../../../cache/helpers';
 import createAuthService from '../../auth/service';
 import userStore from '../../users/store';
+import { issueJWT } from '../../../auth/helpers';
+
 describe('POST /auth/signup', () => {
   let userID: number;
 
@@ -134,7 +136,7 @@ describe('POST /auth/refresh-token', () => {
     }
   });
 
-  it('should get 200 when trying to refresh a JWT token when the refreshToken is valid', async () => {
+  it('refresh token in header and cookie should match', async () => {
     const authService = createAuthService(userStore);
 
     const userResponse = await authService.signup(
@@ -148,6 +150,49 @@ describe('POST /auth/refresh-token', () => {
       password: 'password',
     });
 
+    const refreshTokenFromBody = loginResponse.body.refreshToken;
+    const refreshTokenFromCookie = loginResponse.headers['set-cookie']?.[0]
+      .split(';')[0]
+      .split('=')[1];
+
+    const refreshTokenFromCookieEscaped = decodeURIComponent(
+      refreshTokenFromCookie
+    );
+
+    expect(refreshTokenFromBody).toBe(refreshTokenFromCookieEscaped);
+
+    expect(loginResponse.statusCode).toBe(200);
+    expect(loginResponse.body.token).toBeDefined();
+    expect(loginResponse.body.expiresIn).toBeDefined();
+    expect(loginResponse.body.refreshToken).toBeDefined();
+    expect(loginResponse.body.refreshTokenExpires).toBeDefined();
+  });
+
+  it('should get 200 when trying to refresh a JWT token wtih the refreshToken sent in header and cookie', async () => {
+    const authService = createAuthService(userStore);
+
+    const userResponse = await authService.signup(
+      `${usernamePrefix}1`,
+      'password'
+    );
+    userIDs.push(userResponse.id);
+
+    const loginResponse = await request(app).post('/auth/login').send({
+      username: userResponse.username,
+      password: 'password',
+    });
+
+    const refreshTokenFromBody = loginResponse.body.refreshToken;
+    const refreshTokenFromCookie = loginResponse.headers['set-cookie']?.[0]
+      .split(';')[0]
+      .split('=')[1];
+
+    const refreshTokenFromCookieEscaped = decodeURIComponent(
+      refreshTokenFromCookie
+    );
+
+    expect(refreshTokenFromBody).toBe(refreshTokenFromCookieEscaped);
+
     expect(loginResponse.statusCode).toBe(200);
     expect(loginResponse.body.token).toBeDefined();
     expect(loginResponse.body.expiresIn).toBeDefined();
@@ -160,6 +205,131 @@ describe('POST /auth/refresh-token', () => {
       .post('/auth/refresh-token')
       .set('Authorization', `Bearer ${loginResponse.body.token}`)
       .set('x-refresh-token', loginResponse.body.refreshToken)
+      .set('Cookie', `refreshToken=${loginResponse.body.refreshToken}`)
+      .send({ userID: userResponse.id });
+
+    expect(refreshResponse.statusCode).toBe(200);
+    expect(refreshResponse.body.token).toBeDefined();
+    expect(refreshResponse.body.expiresIn).toBeDefined();
+    expect(refreshResponse.body.refreshToken).toBeDefined();
+    expect(refreshResponse.body.refreshTokenExpires).toBeDefined();
+
+    expect(refreshResponse.body.token).not.toBe(loginResponse.body.token);
+    expect(refreshResponse.body.expiresIn).toBe(loginResponse.body.expiresIn);
+    expect(refreshResponse.body.refreshToken).not.toBe(
+      loginResponse.body.refreshToken
+    );
+    expect(refreshResponse.body.refreshTokenExpires).not.toBe(
+      loginResponse.body.refreshTokenExpires
+    );
+
+    const refreshTokenManager = await RefreshTokenManager.getInstance();
+    const isValid = await refreshTokenManager.validateRefreshToken(
+      userResponse.id,
+      refreshResponse.body.refreshToken
+    );
+    expect(isValid).toBe(true);
+  });
+
+  it('should get 200 when trying to refresh a JWT token wtih the refreshToken sent in header', async () => {
+    const authService = createAuthService(userStore);
+
+    const userResponse = await authService.signup(
+      `${usernamePrefix}1`,
+      'password'
+    );
+    userIDs.push(userResponse.id);
+
+    const loginResponse = await request(app).post('/auth/login').send({
+      username: userResponse.username,
+      password: 'password',
+    });
+
+    const refreshTokenFromBody = loginResponse.body.refreshToken;
+    const refreshTokenFromCookie = loginResponse.headers['set-cookie']?.[0]
+      .split(';')[0]
+      .split('=')[1];
+
+    const refreshTokenFromCookieEscaped = decodeURIComponent(
+      refreshTokenFromCookie
+    );
+
+    expect(refreshTokenFromBody).toBe(refreshTokenFromCookieEscaped);
+
+    expect(loginResponse.statusCode).toBe(200);
+    expect(loginResponse.body.token).toBeDefined();
+    expect(loginResponse.body.expiresIn).toBeDefined();
+    expect(loginResponse.body.refreshToken).toBeDefined();
+    expect(loginResponse.body.refreshTokenExpires).toBeDefined();
+
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    const refreshResponse = await request(app)
+      .post('/auth/refresh-token')
+      .set('Authorization', `Bearer ${loginResponse.body.token}`)
+      .set('x-refresh-token', loginResponse.body.refreshToken)
+      .send({ userID: userResponse.id });
+
+    expect(refreshResponse.statusCode).toBe(200);
+    expect(refreshResponse.body.token).toBeDefined();
+    expect(refreshResponse.body.expiresIn).toBeDefined();
+    expect(refreshResponse.body.refreshToken).toBeDefined();
+    expect(refreshResponse.body.refreshTokenExpires).toBeDefined();
+
+    expect(refreshResponse.body.token).not.toBe(loginResponse.body.token);
+    expect(refreshResponse.body.expiresIn).toBe(loginResponse.body.expiresIn);
+    expect(refreshResponse.body.refreshToken).not.toBe(
+      loginResponse.body.refreshToken
+    );
+    expect(refreshResponse.body.refreshTokenExpires).not.toBe(
+      loginResponse.body.refreshTokenExpires
+    );
+
+    const refreshTokenManager = await RefreshTokenManager.getInstance();
+    const isValid = await refreshTokenManager.validateRefreshToken(
+      userResponse.id,
+      refreshResponse.body.refreshToken
+    );
+    expect(isValid).toBe(true);
+  });
+
+  it('should get 200 when trying to refresh a JWT token wtih the refreshToken sent in cookie', async () => {
+    const authService = createAuthService(userStore);
+
+    const userResponse = await authService.signup(
+      `${usernamePrefix}1`,
+      'password'
+    );
+    userIDs.push(userResponse.id);
+
+    const loginResponse = await request(app).post('/auth/login').send({
+      username: userResponse.username,
+      password: 'password',
+    });
+
+    const refreshTokenFromBody = loginResponse.body.refreshToken;
+    const refreshTokenFromCookie = loginResponse.headers['set-cookie']?.[0]
+      .split(';')[0]
+      .split('=')[1];
+
+    const refreshTokenFromCookieEscaped = decodeURIComponent(
+      refreshTokenFromCookie
+    );
+
+    expect(refreshTokenFromBody).toBe(refreshTokenFromCookieEscaped);
+
+    expect(loginResponse.statusCode).toBe(200);
+    expect(loginResponse.body.token).toBeDefined();
+    expect(loginResponse.body.expiresIn).toBeDefined();
+    expect(loginResponse.body.refreshToken).toBeDefined();
+    expect(loginResponse.body.refreshTokenExpires).toBeDefined();
+
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    const refreshResponse = await request(app)
+      .post('/auth/refresh-token')
+      .set('Authorization', `Bearer ${loginResponse.body.token}`)
+      .set('Cookie', `refreshToken=${loginResponse.body.refreshToken}`)
       .send({ userID: userResponse.id });
 
     expect(refreshResponse.statusCode).toBe(200);
@@ -216,6 +386,70 @@ describe('POST /auth/refresh-token', () => {
     const refreshResponse = await request(app)
       .post('/auth/refresh-token')
       .set('x-refresh-token', loginResponse.body.refreshToken)
+      .send({ userID: userResponse.id });
+
+    expect(refreshResponse.statusCode).toBe(401);
+  });
+
+  it('verify JWT expiry', async () => {
+    const authService = createAuthService(userStore);
+
+    const userResponse = await authService.signup(
+      `${usernamePrefix}1`,
+      'password'
+    );
+    userIDs.push(userResponse.id);
+
+    const jwtToken = issueJWT(userResponse, 1);
+    expect(jwtToken.expires).toBe(1);
+
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    const response = await request(app)
+      .post('/auth/revoke-token')
+      .set('Authorization', jwtToken.token)
+      .send({ userID: userResponse.id });
+
+    expect(response.statusCode).toBe(401);
+  });
+
+  it('verify refresh token expiry', async () => {
+    const authService = createAuthService(userStore);
+
+    const userResponse = await authService.signup(
+      `${usernamePrefix}1`,
+      'password'
+    );
+    userIDs.push(userResponse.id);
+
+    const loginResponse = await request(app).post('/auth/login').send({
+      username: userResponse.username,
+      password: 'password',
+    });
+
+    const refreshTokenFromBody = loginResponse.body.refreshToken;
+    const refreshTokenManager = await RefreshTokenManager.getInstance();
+    const refreshTokenFromCache = await refreshTokenManager.getRefreshToken(
+      userResponse.id
+    );
+
+    expect(refreshTokenFromBody).toBeDefined();
+    expect(refreshTokenFromCache).toBeDefined();
+    expect(refreshTokenFromBody).toBe(refreshTokenFromCache);
+
+    await refreshTokenManager.setRefreshTokenExpiration(userResponse.id, 1);
+
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    const refreshTokenFromCache2 = await refreshTokenManager.getRefreshToken(
+      userResponse.id
+    );
+
+    expect(refreshTokenFromCache2).toBeNull();
+
+    const refreshResponse = await request(app)
+      .post('/auth/refresh-token')
+      .set('x-refresh-token', refreshTokenFromBody)
       .send({ userID: userResponse.id });
 
     expect(refreshResponse.statusCode).toBe(401);
