@@ -80,14 +80,11 @@ export class RefreshTokenManager {
     refreshToken: string
   ): Promise<boolean> {
     if (!this.client) throw new Error('Redis client not initialized');
-
     const key = `${RefreshTokenManager.REFRESH_TOKEN_PREFIX}${userId}`;
     const token = await this.client.get(key);
-
     if (!token) {
       return false;
     }
-
     return token === refreshToken;
   }
 

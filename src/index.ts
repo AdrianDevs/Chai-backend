@@ -26,6 +26,7 @@ const port = process.env.PORT || 8080;
 const corsOptions = {
   origin: process.env.CORS_ORIGIN,
   optionsSuccessStatus: 200,
+  credentials: true,
 };
 console.log('[cors]: corsOptions: ', corsOptions);
 // app.options('*', cors(corsOptions)); // include before other routes

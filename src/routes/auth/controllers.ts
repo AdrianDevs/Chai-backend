@@ -81,7 +81,7 @@ class Controller {
       const refreshTokenFromCookie = req.cookies?.refreshToken;
       const refreshTokenFromHeader = req.headers['x-refresh-token'] as string;
 
-      if (!userID || (!refreshTokenFromCookie && !refreshTokenFromHeader)) {
+      if (!userID || !(refreshTokenFromCookie || refreshTokenFromHeader)) {
         res.status(401).json({ message: 'Unauthorized' });
         return;
       }

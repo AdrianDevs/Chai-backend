@@ -145,10 +145,12 @@ export function setRefreshTokenCookie(
 ) {
   res.cookie('refreshToken', refreshToken, {
     httpOnly: true,
-    secure: process.env.ENV === 'PROD',
-    sameSite: process.env.ENV === 'PROD' ? 'strict' : 'lax',
-    path: '/auth/refresh-token',
+    secure: process.env.ENV === 'PROD' ? true : false,
+    sameSite: process.env.ENV === 'PROD' ? 'strict' : 'none',
     expires: refreshTokenExpires,
+    // path: '/auth/refresh-token',
+    path: '/',
+    maxAge: refreshTokenExpires.getTime() - Date.now(),
   });
 
   return res;
