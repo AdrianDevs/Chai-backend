@@ -12,6 +12,8 @@ import routes from '@/routes';
 import cookieParser from 'cookie-parser';
 import { jwtStrategy } from './auth/passport';
 import passport from 'passport';
+import setupWebSocket from './webSockets/setup';
+import { Server } from 'ws';
 
 console.log('[server]: Starting server');
 
@@ -50,9 +52,12 @@ app.use(handleUnauthorizedError);
 app.use(handleUnknownError);
 
 if (process.env.ENV !== 'TEST') {
-  app.listen(port, () => {
+  const server = app.listen(port, () => {
     console.log(`[server]: Server is running on at http://localhost:${port}`);
   });
+  // WebSocket setup
+  console.log('[server]: Setup WebSocket');
+  setupWebSocket(server as unknown as Server);
 } else {
   console.log('[server]: Server started in test environment and not listening');
 }

@@ -39,7 +39,7 @@ class Store implements ConversationMessageStoreInterface {
         .selectAll()
         .execute();
 
-      if (!messages.length) {
+      if (!messages.length || offset !== 0) {
         return messages;
       }
 

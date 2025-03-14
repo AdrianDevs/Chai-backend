@@ -125,7 +125,7 @@ export function issueJWT(user: User, tokenExpiresIn?: number): JwtToken {
   );
 
   return {
-    token: 'Bearer ' + signedToken,
+    token: signedToken,
     expires: expiresIn,
     refreshToken,
     refreshTokenExpires,
@@ -177,10 +177,6 @@ export const checkAuthenticated = async (
       session: false,
     },
     (err: unknown, user?: Express.User | false | null) => {
-      // console.log('checkAuthenticated');
-      // console.log('- err', err);
-      // console.log('- user', user);
-
       // If authentication failed, `user` will be set to false. If an exception occurred, `err` will be set.
 
       if (err) {

@@ -22,8 +22,6 @@ const options: StrategyOptionsWithoutRequest = {
  * @param {Function} verify - JWT Strategy Verify Function
  */
 export const jwtStrategy = new Strategy(options, (jwtPayload, done) => {
-  // console.log('JWT STRATEGY');
-  // console.log('- jwtPayload', jwtPayload);
   try {
     // const user = service.findUserById(jwtPayload.id);
     const user = jwtPayload.user;

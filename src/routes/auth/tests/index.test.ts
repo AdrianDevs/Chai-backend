@@ -378,7 +378,7 @@ describe('POST /auth/refresh-token', () => {
     const invalidateResponse = await request(app)
       .post('/auth/revoke-token')
       .set('Accept', 'application/json')
-      .set('Authorization', `${loginResponse.body.token}`)
+      .set('Authorization', `Bearer ${loginResponse.body.token}`)
       .set('x-refresh-token', loginResponse.body.refreshToken);
 
     expect(invalidateResponse.statusCode).toBe(200);
@@ -492,14 +492,14 @@ describe('POST /auth/revoke-token', () => {
 
     const invalidateResponse = await request(app)
       .post('/auth/revoke-token')
-      .set('Authorization', `${loginResponse.body.token}`)
+      .set('Authorization', `Bearer ${loginResponse.body.token}`)
       .set('x-refresh-token', loginResponse.body.refreshToken);
 
     expect(invalidateResponse.statusCode).toBe(200);
 
     const revokeResponse = await request(app)
       .post('/auth/revoke-token')
-      .set('Authorization', `${loginResponse.body.token}`)
+      .set('Authorization', `Bearer ${loginResponse.body.token}`)
       .set('x-refresh-token', loginResponse.body.refreshToken);
 
     expect(revokeResponse.statusCode).toBe(200);
@@ -527,7 +527,7 @@ describe('POST /auth/revoke-token', () => {
 
     const revokeResponse = await request(app)
       .post('/auth/revoke-token')
-      .set('Authorization', `${loginResponse.body.token}`)
+      .set('Authorization', `Bearer ${loginResponse.body.token}`)
       .set('x-refresh-token', loginResponse.body.refreshToken);
 
     expect(revokeResponse.statusCode).toBe(200);
