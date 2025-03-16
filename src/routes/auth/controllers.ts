@@ -1,7 +1,11 @@
 import { NextFunction, Request, Response } from 'express';
 import asyncHandler from 'express-async-handler';
 import { User } from '@/database/types/user';
-import { JwtToken, setRefreshTokenCookie } from '@/auth/helpers';
+import {
+  HashTokenObject,
+  TokenObject,
+  setRefreshTokenCookie,
+} from '@/auth/helpers';
 import { CustomError } from '@/errors';
 
 export interface AuthServiceInterface {
@@ -9,11 +13,12 @@ export interface AuthServiceInterface {
   login: (
     username: string,
     password: string
-  ) => Promise<(User & JwtToken) | undefined>;
+  ) => Promise<(User & TokenObject) | undefined>;
   findUserById: (id: number) => Promise<User | undefined>;
   findUserByUsername: (username: string) => Promise<User | undefined>;
-  refreshToken: (userID: number, refreshToken: string) => Promise<JwtToken>;
-  revokeToken: (userID: number) => Promise<void>;
+  refreshTokens: (userID: number, refreshToken: string) => Promise<TokenObject>;
+  revokeTokens: (userID: number) => Promise<void>;
+  generateWebSocketToken: (userID: number) => Promise<HashTokenObject>;
 }
 
 class Controller {
@@ -56,26 +61,35 @@ class Controller {
         return;
       }
 
-      if (userAndToken.refreshToken && userAndToken.refreshTokenExpires) {
+      if (userAndToken.refreshToken && userAndToken.refreshTokenExpiryEpoch) {
         setRefreshTokenCookie(
           res,
           userAndToken.refreshToken,
-          userAndToken.refreshTokenExpires
+          userAndToken.refreshTokenExpiryDate
         );
       }
 
       res.status(200).json({
         id: userAndToken.id,
         username: userAndToken.username,
-        token: userAndToken.token,
-        expiresIn: userAndToken.expires,
+        jwt: userAndToken.token,
+        expiryDate: userAndToken.expiryDate,
+        expiryEpoch: userAndToken.expiryEpoch,
+        expiresInSeconds: userAndToken.expiresInSeconds,
         refreshToken: userAndToken.refreshToken,
-        refreshTokenExpires: userAndToken.refreshTokenExpires,
+        refreshTokenExpiryDate: userAndToken.refreshTokenExpiryDate,
+        refreshTokenExpiryEpoch: userAndToken.refreshTokenExpiryEpoch,
+        refreshTokenExpiresInSeconds: userAndToken.refreshTokenExpiresInSeconds,
+        webSocketToken: userAndToken.webSocketToken,
+        webSocketTokenExpiryDate: userAndToken.webSocketTokenExpiryDate,
+        webSocketTokenExpiryEpoch: userAndToken.webSocketTokenExpiryEpoch,
+        webSocketTokenExpiresInSeconds:
+          userAndToken.webSocketTokenExpiresInSeconds,
       });
     }
   );
 
-  public refreshToken = asyncHandler(
+  public refreshTokens = asyncHandler(
     async (req: Request, res: Response, _next: NextFunction) => {
       const userID = parseInt(req.body.userID);
       const refreshTokenFromCookie = req.cookies?.refreshToken;
@@ -86,7 +100,7 @@ class Controller {
         return;
       }
 
-      const userAndToken = await this.service.refreshToken(
+      const userAndToken = await this.service.refreshTokens(
         userID,
         refreshTokenFromCookie || refreshTokenFromHeader
       );
@@ -97,15 +111,24 @@ class Controller {
       }
 
       res.status(200).json({
-        token: userAndToken.token,
-        expiresIn: userAndToken.expires,
+        jwt: userAndToken.token,
+        expiryDate: userAndToken.expiryDate,
+        expiryEpoch: userAndToken.expiryEpoch,
+        expiresInSeconds: userAndToken.expiresInSeconds,
         refreshToken: userAndToken.refreshToken,
-        refreshTokenExpires: userAndToken.refreshTokenExpires,
+        refreshTokenExpiryDate: userAndToken.refreshTokenExpiryDate,
+        refreshTokenExpiryEpoch: userAndToken.refreshTokenExpiryEpoch,
+        refreshTokenExpiresInSeconds: userAndToken.refreshTokenExpiresInSeconds,
+        webSocketToken: userAndToken.webSocketToken,
+        webSocketTokenExpiryDate: userAndToken.webSocketTokenExpiryDate,
+        webSocketTokenExpiryEpoch: userAndToken.webSocketTokenExpiryEpoch,
+        webSocketTokenExpiresInSeconds:
+          userAndToken.webSocketTokenExpiresInSeconds,
       });
     }
   );
 
-  public revokeToken = asyncHandler(
+  public revokeTokens = asyncHandler(
     async (req: Request, res: Response, _next: NextFunction) => {
       const userID = req.user?.id;
 
@@ -114,9 +137,39 @@ class Controller {
         return;
       }
 
-      await this.service.revokeToken(userID);
+      await this.service.revokeTokens(userID);
 
       res.status(200).json({ message: 'Token revoked' });
+    }
+  );
+
+  public getWsToken = asyncHandler(
+    async (req: Request, res: Response, next: NextFunction) => {
+      const userID = req.user?.id;
+      const refreshTokenFromCookie = req.cookies?.refreshToken;
+      const refreshTokenFromHeader = req.headers['x-refresh-token'] as string;
+
+      if (!userID || !(refreshTokenFromCookie || refreshTokenFromHeader)) {
+        res.status(401).json({ message: 'Unauthorized' });
+        return;
+      }
+
+      try {
+        const tokenObject = await this.service.generateWebSocketToken(userID);
+
+        res.status(200).json({
+          token: tokenObject.token,
+          expiryDate: tokenObject.expiryDate,
+          expiryEpoch: tokenObject.expiryEpoch,
+          expiresInSeconds: tokenObject.expiresInSeconds,
+        });
+      } catch (err) {
+        if (err instanceof CustomError) {
+          res.status(err.status).json({ message: err.message });
+          return;
+        }
+        return next(err);
+      }
     }
   );
 }

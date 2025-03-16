@@ -15,9 +15,12 @@ router.post('/signup', controller.signup);
 
 router.post('/login', controller.login);
 
-router.post('/refresh-token', controller.refreshToken);
+router.post('/refresh-tokens', controller.refreshTokens);
 
 router.use(checkAuthenticated);
-router.post('/revoke-token', controller.revokeToken);
+
+router.post('/revoke-tokens', controller.revokeTokens);
+
+router.get('/token/ws', controller.getWsToken);
 
 export default router;

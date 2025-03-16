@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import createAuthService from '../../auth/service';
 import userStore from '../store';
 import { db } from '../../../database/database';
-import { RefreshTokenManager } from '../../../cache/helpers';
+import { CacheTokenManager } from '../../../cache/helpers';
 
 describe('GET /users', () => {
   let userIDs: number[] = [];
@@ -13,8 +13,9 @@ describe('GET /users', () => {
     if (userIDs && userIDs.length > 0) {
       for (const userID of userIDs) {
         await db.deleteFrom('user').where('id', '=', userID).execute();
-        const refreshTokenManager = await RefreshTokenManager.getInstance();
+        const refreshTokenManager = await CacheTokenManager.getInstance();
         refreshTokenManager.invalidateRefreshToken(userID);
+        refreshTokenManager.invalidateWebSocketToken(userID);
       }
     }
   });
@@ -70,8 +71,9 @@ describe('GET /users/search', () => {
     if (userIDs && userIDs.length > 0) {
       for (const userID of userIDs) {
         await db.deleteFrom('user').where('id', '=', userID).execute();
-        const refreshTokenManager = await RefreshTokenManager.getInstance();
+        const refreshTokenManager = await CacheTokenManager.getInstance();
         refreshTokenManager.invalidateRefreshToken(userID);
+        refreshTokenManager.invalidateWebSocketToken(userID);
       }
     }
   });
@@ -148,8 +150,9 @@ describe('GET /users/validate', () => {
     if (userIDs && userIDs.length > 0) {
       for (const userID of userIDs) {
         await db.deleteFrom('user').where('id', '=', userID).execute();
-        const refreshTokenManager = await RefreshTokenManager.getInstance();
+        const refreshTokenManager = await CacheTokenManager.getInstance();
         refreshTokenManager.invalidateRefreshToken(userID);
+        refreshTokenManager.invalidateWebSocketToken(userID);
       }
     }
   });
@@ -197,8 +200,9 @@ describe('DELETE /users/:id', () => {
     if (userIDs && userIDs.length > 0) {
       for (const userID of userIDs) {
         await db.deleteFrom('user').where('id', '=', userID).execute();
-        const refreshTokenManager = await RefreshTokenManager.getInstance();
+        const refreshTokenManager = await CacheTokenManager.getInstance();
         refreshTokenManager.invalidateRefreshToken(userID);
+        refreshTokenManager.invalidateWebSocketToken(userID);
       }
     }
     if (conversationIDs && conversationIDs.length > 0) {

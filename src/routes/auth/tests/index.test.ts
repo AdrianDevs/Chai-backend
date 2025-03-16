@@ -2,10 +2,14 @@ import request from 'supertest';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import app from '../../../index';
 import { db } from '../../../database/database';
-import { RefreshTokenManager } from '../../../cache/helpers';
+import { CacheTokenManager } from '../../../cache/helpers';
 import createAuthService from '../../auth/service';
 import userStore from '../../users/store';
-import { issueJWT } from '../../../auth/helpers';
+import {
+  issueTokens,
+  REFRESH_TOKEN_EXPIRATION,
+  WEBSOCKET_TOKEN_EXPIRATION,
+} from '../../../auth/helpers';
 
 describe('POST /auth/signup', () => {
   let userID: number;
@@ -13,8 +17,9 @@ describe('POST /auth/signup', () => {
   afterEach(async () => {
     if (userID) {
       await db.deleteFrom('user').where('id', '=', userID).execute();
-      const refreshTokenManager = await RefreshTokenManager.getInstance();
+      const refreshTokenManager = await CacheTokenManager.getInstance();
       refreshTokenManager.invalidateRefreshToken(userID);
+      refreshTokenManager.invalidateWebSocketToken(userID);
     }
   });
 
@@ -74,8 +79,9 @@ describe('POST /auth/login', () => {
   afterAll(async () => {
     if (userID) {
       db.deleteFrom('user').where('id', '=', userID).execute();
-      const refreshTokenManager = await RefreshTokenManager.getInstance();
+      const refreshTokenManager = await CacheTokenManager.getInstance();
       refreshTokenManager.invalidateRefreshToken(userID);
+      refreshTokenManager.invalidateWebSocketToken(userID);
     }
   });
 
@@ -87,25 +93,52 @@ describe('POST /auth/login', () => {
 
     // Check that the response is successful and contains the expected fields
     expect(response.statusCode).toBe(200);
-    expect(response.body.token).toBeDefined();
-    expect(response.body.expiresIn).toBeDefined();
+    expect(response.body.jwt).toBeDefined();
+    expect(response.body.expiresInSeconds).toBeDefined();
+    expect(response.body.expiryEpoch).toBeDefined();
+    expect(response.body.expiryDate).toBeDefined();
     expect(response.body.refreshToken).toBeDefined();
-    expect(response.body.refreshTokenExpires).toBeDefined();
+    expect(response.body.refreshTokenExpiresInSeconds).toBeDefined();
+    expect(response.body.refreshTokenExpiryEpoch).toBeDefined();
+    expect(response.body.refreshTokenExpiryDate).toBeDefined();
+    expect(response.body.webSocketToken).toBeDefined();
+    expect(response.body.webSocketTokenExpiresInSeconds).toBeDefined();
+    expect(response.body.webSocketTokenExpiryEpoch).toBeDefined();
+    expect(response.body.webSocketTokenExpiryDate).toBeDefined();
 
     // Validate the refresh token
-    const refreshTokenManager = await RefreshTokenManager.getInstance();
-    const isValid = await refreshTokenManager.validateRefreshToken(
+    const refreshTokenManager = await CacheTokenManager.getInstance();
+    const isRefreshTokenValid = await refreshTokenManager.validateRefreshToken(
       userID,
       response.body.refreshToken
     );
-    expect(isValid).toBe(true);
+    expect(isRefreshTokenValid).toBe(true);
+
+    // Validate the web socket token
+    const isWebSocketTokenValid =
+      await refreshTokenManager.validateWebSocketToken(
+        userID,
+        response.body.webSocketToken
+      );
+    expect(isWebSocketTokenValid).toBe(true);
 
     // Check that the refresh token expires in the future
-    const refreshTokenExpires = new Date(response.body.refreshTokenExpires);
+    const refreshTokenExpiryDate = new Date(
+      response.body.refreshTokenExpiryDate
+    );
     const currentTime = new Date();
-    const timeDiff = refreshTokenExpires.getTime() - currentTime.getTime();
+    const timeDiff = refreshTokenExpiryDate.getTime() - currentTime.getTime();
     expect(timeDiff).toBeGreaterThan(0);
-    expect(timeDiff).toBeLessThan(7 * 24 * 60 * 60 * 1000);
+    expect(timeDiff).toBeLessThan(REFRESH_TOKEN_EXPIRATION * 1000);
+
+    // Check that the web socket token expires in the future
+    const webSocketTokenExpiryDate = new Date(
+      response.body.webSocketTokenExpiryDate
+    );
+    const timeDiffWebSocket =
+      webSocketTokenExpiryDate.getTime() - currentTime.getTime();
+    expect(timeDiffWebSocket).toBeGreaterThan(0);
+    expect(timeDiffWebSocket).toBeLessThan(WEBSOCKET_TOKEN_EXPIRATION * 1000);
 
     // Invalidate the refresh token
     await refreshTokenManager.invalidateRefreshToken(userID);
@@ -116,9 +149,22 @@ describe('POST /auth/login', () => {
       );
     expect(isValidAfterInvalidation).toBe(false);
 
+    // Invalidate the web socket token
+    await refreshTokenManager.invalidateWebSocketToken(userID);
+    const isWebSocketTokenValidAfterInvalidation =
+      await refreshTokenManager.validateWebSocketToken(
+        userID,
+        response.body.webSocketToken
+      );
+    expect(isWebSocketTokenValidAfterInvalidation).toBe(false);
+
     // Check that the refresh token is not stored after invalidation
     const refreshToken = await refreshTokenManager.getRefreshToken(userID);
     expect(refreshToken).toBeNull();
+
+    // Check that the web socket token is not stored after invalidation
+    const webSocketToken = await refreshTokenManager.getWebSocketToken(userID);
+    expect(webSocketToken).toBeNull();
   });
 });
 
@@ -129,9 +175,10 @@ describe('POST /auth/refresh-token', () => {
   afterEach(async () => {
     if (userIDs && userIDs.length > 0) {
       await db.deleteFrom('user').where('id', 'in', userIDs).execute();
-      const refreshTokenManager = await RefreshTokenManager.getInstance();
+      const refreshTokenManager = await CacheTokenManager.getInstance();
       for (const userID of userIDs) {
         refreshTokenManager.invalidateRefreshToken(userID);
+        refreshTokenManager.invalidateWebSocketToken(userID);
       }
     }
   });
@@ -162,10 +209,18 @@ describe('POST /auth/refresh-token', () => {
     expect(refreshTokenFromBody).toBe(refreshTokenFromCookieEscaped);
 
     expect(loginResponse.statusCode).toBe(200);
-    expect(loginResponse.body.token).toBeDefined();
-    expect(loginResponse.body.expiresIn).toBeDefined();
+    expect(loginResponse.body.jwt).toBeDefined();
+    expect(loginResponse.body.expiresInSeconds).toBeDefined();
+    expect(loginResponse.body.expiryEpoch).toBeDefined();
+    expect(loginResponse.body.expiryDate).toBeDefined();
     expect(loginResponse.body.refreshToken).toBeDefined();
-    expect(loginResponse.body.refreshTokenExpires).toBeDefined();
+    expect(loginResponse.body.refreshTokenExpiresInSeconds).toBeDefined();
+    expect(loginResponse.body.refreshTokenExpiryEpoch).toBeDefined();
+    expect(loginResponse.body.refreshTokenExpiryDate).toBeDefined();
+    expect(loginResponse.body.webSocketToken).toBeDefined();
+    expect(loginResponse.body.webSocketTokenExpiresInSeconds).toBeDefined();
+    expect(loginResponse.body.webSocketTokenExpiryEpoch).toBeDefined();
+    expect(loginResponse.body.webSocketTokenExpiryDate).toBeDefined();
   });
 
   it('should get 200 when trying to refresh a JWT token wtih the refreshToken sent in header and cookie', async () => {
@@ -194,41 +249,88 @@ describe('POST /auth/refresh-token', () => {
     expect(refreshTokenFromBody).toBe(refreshTokenFromCookieEscaped);
 
     expect(loginResponse.statusCode).toBe(200);
-    expect(loginResponse.body.token).toBeDefined();
-    expect(loginResponse.body.expiresIn).toBeDefined();
+    expect(loginResponse.body.jwt).toBeDefined();
+    expect(loginResponse.body.expiresInSeconds).toBeDefined();
+    expect(loginResponse.body.expiryEpoch).toBeDefined();
+    expect(loginResponse.body.expiryDate).toBeDefined();
     expect(loginResponse.body.refreshToken).toBeDefined();
-    expect(loginResponse.body.refreshTokenExpires).toBeDefined();
+    expect(loginResponse.body.refreshTokenExpiresInSeconds).toBeDefined();
+    expect(loginResponse.body.refreshTokenExpiryEpoch).toBeDefined();
+    expect(loginResponse.body.refreshTokenExpiryDate).toBeDefined();
+    expect(loginResponse.body.webSocketToken).toBeDefined();
+    expect(loginResponse.body.webSocketTokenExpiresInSeconds).toBeDefined();
+    expect(loginResponse.body.webSocketTokenExpiryEpoch).toBeDefined();
+    expect(loginResponse.body.webSocketTokenExpiryDate).toBeDefined();
 
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
     const refreshResponse = await request(app)
-      .post('/auth/refresh-token')
-      .set('Authorization', `Bearer ${loginResponse.body.token}`)
+      .post('/auth/refresh-tokens')
+      .set('Authorization', `Bearer ${loginResponse.body.jwt}`)
       .set('x-refresh-token', loginResponse.body.refreshToken)
       .set('Cookie', `refreshToken=${loginResponse.body.refreshToken}`)
       .send({ userID: userResponse.id });
 
     expect(refreshResponse.statusCode).toBe(200);
-    expect(refreshResponse.body.token).toBeDefined();
-    expect(refreshResponse.body.expiresIn).toBeDefined();
+    expect(refreshResponse.body.jwt).toBeDefined();
+    expect(refreshResponse.body.expiresInSeconds).toBeDefined();
+    expect(refreshResponse.body.expiryEpoch).toBeDefined();
+    expect(refreshResponse.body.expiryDate).toBeDefined();
     expect(refreshResponse.body.refreshToken).toBeDefined();
-    expect(refreshResponse.body.refreshTokenExpires).toBeDefined();
+    expect(refreshResponse.body.refreshTokenExpiresInSeconds).toBeDefined();
+    expect(refreshResponse.body.refreshTokenExpiryEpoch).toBeDefined();
+    expect(refreshResponse.body.refreshTokenExpiryDate).toBeDefined();
+    expect(refreshResponse.body.webSocketToken).toBeDefined();
+    expect(refreshResponse.body.webSocketTokenExpiresInSeconds).toBeDefined();
+    expect(refreshResponse.body.webSocketTokenExpiryEpoch).toBeDefined();
+    expect(refreshResponse.body.webSocketTokenExpiryDate).toBeDefined();
 
-    expect(refreshResponse.body.token).not.toBe(loginResponse.body.token);
-    expect(refreshResponse.body.expiresIn).toBe(loginResponse.body.expiresIn);
+    expect(refreshResponse.body.jwt).not.toBe(loginResponse.body.jwt);
+    expect(refreshResponse.body.expiresInSeconds).toBe(
+      loginResponse.body.expiresInSeconds
+    );
+    expect(refreshResponse.body.expiryEpoch).not.toBe(
+      loginResponse.body.expiryEpoch
+    );
+    expect(refreshResponse.body.expiryDate).not.toBe(
+      loginResponse.body.expiryDate
+    );
+
     expect(refreshResponse.body.refreshToken).not.toBe(
       loginResponse.body.refreshToken
     );
-    expect(refreshResponse.body.refreshTokenExpires).not.toBe(
-      loginResponse.body.refreshTokenExpires
+    expect(refreshResponse.body.refreshTokenExpiresInSeconds).toBe(
+      loginResponse.body.refreshTokenExpiresInSeconds
+    );
+    expect(refreshResponse.body.refreshTokenExpiryEpoch).not.toBe(
+      loginResponse.body.refreshTokenExpiryEpoch
+    );
+    expect(refreshResponse.body.refreshTokenExpiryDate).not.toBe(
+      loginResponse.body.refreshTokenExpiryDate
     );
 
-    const refreshTokenManager = await RefreshTokenManager.getInstance();
-    const isValid = await refreshTokenManager.validateRefreshToken(
+    expect(refreshResponse.body.webSocketToken).not.toBe(
+      loginResponse.body.webSocketToken
+    );
+    expect(refreshResponse.body.webSocketTokenExpiresInSeconds).toBe(
+      loginResponse.body.webSocketTokenExpiresInSeconds
+    );
+    expect(refreshResponse.body.webSocketTokenExpiryEpoch).not.toBe(
+      loginResponse.body.webSocketTokenExpiryEpoch
+    );
+
+    const refreshTokenManager = await CacheTokenManager.getInstance();
+    const isRefreshTokenValid = await refreshTokenManager.validateRefreshToken(
       userResponse.id,
       refreshResponse.body.refreshToken
     );
-    expect(isValid).toBe(true);
+    expect(isRefreshTokenValid).toBe(true);
+    const isWebSocketTokenValid =
+      await refreshTokenManager.validateWebSocketToken(
+        userResponse.id,
+        refreshResponse.body.webSocketToken
+      );
+    expect(isWebSocketTokenValid).toBe(true);
   });
 
   it('should get 200 when trying to refresh a JWT token wtih the refreshToken sent in header', async () => {
@@ -257,40 +359,86 @@ describe('POST /auth/refresh-token', () => {
     expect(refreshTokenFromBody).toBe(refreshTokenFromCookieEscaped);
 
     expect(loginResponse.statusCode).toBe(200);
-    expect(loginResponse.body.token).toBeDefined();
-    expect(loginResponse.body.expiresIn).toBeDefined();
+    expect(loginResponse.body.jwt).toBeDefined();
+    expect(loginResponse.body.expiresInSeconds).toBeDefined();
+    expect(loginResponse.body.expiryEpoch).toBeDefined();
+    expect(loginResponse.body.expiryDate).toBeDefined();
     expect(loginResponse.body.refreshToken).toBeDefined();
-    expect(loginResponse.body.refreshTokenExpires).toBeDefined();
+    expect(loginResponse.body.refreshTokenExpiresInSeconds).toBeDefined();
+    expect(loginResponse.body.refreshTokenExpiryEpoch).toBeDefined();
+    expect(loginResponse.body.refreshTokenExpiryDate).toBeDefined();
+    expect(loginResponse.body.webSocketToken).toBeDefined();
+    expect(loginResponse.body.webSocketTokenExpiresInSeconds).toBeDefined();
 
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
     const refreshResponse = await request(app)
-      .post('/auth/refresh-token')
+      .post('/auth/refresh-tokens')
       .set('Authorization', `Bearer ${loginResponse.body.token}`)
       .set('x-refresh-token', loginResponse.body.refreshToken)
       .send({ userID: userResponse.id });
 
     expect(refreshResponse.statusCode).toBe(200);
-    expect(refreshResponse.body.token).toBeDefined();
-    expect(refreshResponse.body.expiresIn).toBeDefined();
+    expect(refreshResponse.body.jwt).toBeDefined();
+    expect(refreshResponse.body.expiresInSeconds).toBeDefined();
+    expect(refreshResponse.body.expiryEpoch).toBeDefined();
+    expect(refreshResponse.body.expiryDate).toBeDefined();
     expect(refreshResponse.body.refreshToken).toBeDefined();
-    expect(refreshResponse.body.refreshTokenExpires).toBeDefined();
+    expect(refreshResponse.body.refreshTokenExpiresInSeconds).toBeDefined();
+    expect(refreshResponse.body.refreshTokenExpiryEpoch).toBeDefined();
+    expect(refreshResponse.body.refreshTokenExpiryDate).toBeDefined();
+    expect(refreshResponse.body.webSocketToken).toBeDefined();
+    expect(refreshResponse.body.webSocketTokenExpiresInSeconds).toBeDefined();
 
-    expect(refreshResponse.body.token).not.toBe(loginResponse.body.token);
-    expect(refreshResponse.body.expiresIn).toBe(loginResponse.body.expiresIn);
+    expect(refreshResponse.body.jwt).not.toBe(loginResponse.body.jwt);
+    expect(refreshResponse.body.expiresInSeconds).toBe(
+      loginResponse.body.expiresInSeconds
+    );
+    expect(refreshResponse.body.expiryEpoch).not.toBe(
+      loginResponse.body.expiryEpoch
+    );
+    expect(refreshResponse.body.expiryDate).not.toBe(
+      loginResponse.body.expiryDate
+    );
+
     expect(refreshResponse.body.refreshToken).not.toBe(
       loginResponse.body.refreshToken
     );
-    expect(refreshResponse.body.refreshTokenExpires).not.toBe(
-      loginResponse.body.refreshTokenExpires
+    expect(refreshResponse.body.refreshTokenExpiresInSeconds).toBe(
+      loginResponse.body.refreshTokenExpiresInSeconds
+    );
+    expect(refreshResponse.body.refreshTokenExpiryEpoch).not.toBe(
+      loginResponse.body.refreshTokenExpiryEpoch
+    );
+    expect(refreshResponse.body.refreshTokenExpiryDate).not.toBe(
+      loginResponse.body.refreshTokenExpiryDate
     );
 
-    const refreshTokenManager = await RefreshTokenManager.getInstance();
-    const isValid = await refreshTokenManager.validateRefreshToken(
+    expect(refreshResponse.body.webSocketToken).not.toBe(
+      loginResponse.body.webSocketToken
+    );
+    expect(refreshResponse.body.webSocketTokenExpiresInSeconds).toBe(
+      loginResponse.body.webSocketTokenExpiresInSeconds
+    );
+    expect(refreshResponse.body.webSocketTokenExpiryEpoch).not.toBe(
+      loginResponse.body.webSocketTokenExpiryEpoch
+    );
+    expect(refreshResponse.body.webSocketTokenExpiryDate).not.toBe(
+      loginResponse.body.webSocketTokenExpiryDate
+    );
+
+    const refreshTokenManager = await CacheTokenManager.getInstance();
+    const isRefreshTokenValid = await refreshTokenManager.validateRefreshToken(
       userResponse.id,
       refreshResponse.body.refreshToken
     );
-    expect(isValid).toBe(true);
+    expect(isRefreshTokenValid).toBe(true);
+    const isWebSocketTokenValid =
+      await refreshTokenManager.validateWebSocketToken(
+        userResponse.id,
+        refreshResponse.body.webSocketToken
+      );
+    expect(isWebSocketTokenValid).toBe(true);
   });
 
   it('should get 200 when trying to refresh a JWT token wtih the refreshToken sent in cookie', async () => {
@@ -319,35 +467,79 @@ describe('POST /auth/refresh-token', () => {
     expect(refreshTokenFromBody).toBe(refreshTokenFromCookieEscaped);
 
     expect(loginResponse.statusCode).toBe(200);
-    expect(loginResponse.body.token).toBeDefined();
-    expect(loginResponse.body.expiresIn).toBeDefined();
+    expect(loginResponse.body.jwt).toBeDefined();
+    expect(loginResponse.body.expiresInSeconds).toBeDefined();
+    expect(loginResponse.body.expiryEpoch).toBeDefined();
+    expect(loginResponse.body.expiryDate).toBeDefined();
     expect(loginResponse.body.refreshToken).toBeDefined();
-    expect(loginResponse.body.refreshTokenExpires).toBeDefined();
+    expect(loginResponse.body.refreshTokenExpiresInSeconds).toBeDefined();
+    expect(loginResponse.body.refreshTokenExpiryEpoch).toBeDefined();
+    expect(loginResponse.body.refreshTokenExpiryDate).toBeDefined();
+    expect(loginResponse.body.webSocketToken).toBeDefined();
+    expect(loginResponse.body.webSocketTokenExpiresInSeconds).toBeDefined();
+    expect(loginResponse.body.webSocketTokenExpiryEpoch).toBeDefined();
+    expect(loginResponse.body.webSocketTokenExpiryDate).toBeDefined();
 
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
     const refreshResponse = await request(app)
-      .post('/auth/refresh-token')
-      .set('Authorization', `Bearer ${loginResponse.body.token}`)
+      .post('/auth/refresh-tokens')
+      .set('Authorization', `Bearer ${loginResponse.body.jwt}`)
       .set('Cookie', `refreshToken=${loginResponse.body.refreshToken}`)
       .send({ userID: userResponse.id });
 
     expect(refreshResponse.statusCode).toBe(200);
-    expect(refreshResponse.body.token).toBeDefined();
-    expect(refreshResponse.body.expiresIn).toBeDefined();
+    expect(refreshResponse.body.jwt).toBeDefined();
+    expect(refreshResponse.body.expiresInSeconds).toBeDefined();
+    expect(refreshResponse.body.expiryEpoch).toBeDefined();
+    expect(refreshResponse.body.expiryDate).toBeDefined();
     expect(refreshResponse.body.refreshToken).toBeDefined();
-    expect(refreshResponse.body.refreshTokenExpires).toBeDefined();
+    expect(refreshResponse.body.refreshTokenExpiresInSeconds).toBeDefined();
+    expect(refreshResponse.body.refreshTokenExpiryEpoch).toBeDefined();
+    expect(refreshResponse.body.refreshTokenExpiryDate).toBeDefined();
+    expect(refreshResponse.body.webSocketToken).toBeDefined();
+    expect(refreshResponse.body.webSocketTokenExpiresInSeconds).toBeDefined();
+    expect(refreshResponse.body.webSocketTokenExpiryEpoch).toBeDefined();
+    expect(refreshResponse.body.webSocketTokenExpiryDate).toBeDefined();
 
-    expect(refreshResponse.body.token).not.toBe(loginResponse.body.token);
-    expect(refreshResponse.body.expiresIn).toBe(loginResponse.body.expiresIn);
+    expect(refreshResponse.body.jwt).not.toBe(loginResponse.body.jwt);
+    expect(refreshResponse.body.expiresInSeconds).toBe(
+      loginResponse.body.expiresInSeconds
+    );
+    expect(refreshResponse.body.expiryEpoch).not.toBe(
+      loginResponse.body.expiryEpoch
+    );
+    expect(refreshResponse.body.expiryDate).not.toBe(
+      loginResponse.body.expiryDate
+    );
+
     expect(refreshResponse.body.refreshToken).not.toBe(
       loginResponse.body.refreshToken
     );
-    expect(refreshResponse.body.refreshTokenExpires).not.toBe(
-      loginResponse.body.refreshTokenExpires
+    expect(refreshResponse.body.refreshTokenExpiresInSeconds).toBe(
+      loginResponse.body.refreshTokenExpiresInSeconds
+    );
+    expect(refreshResponse.body.refreshTokenExpiryEpoch).not.toBe(
+      loginResponse.body.refreshTokenExpiryEpoch
+    );
+    expect(refreshResponse.body.refreshTokenExpiryDate).not.toBe(
+      loginResponse.body.refreshTokenExpiryDate
     );
 
-    const refreshTokenManager = await RefreshTokenManager.getInstance();
+    expect(refreshResponse.body.webSocketToken).not.toBe(
+      loginResponse.body.webSocketToken
+    );
+    expect(refreshResponse.body.webSocketTokenExpiresInSeconds).toBe(
+      loginResponse.body.webSocketTokenExpiresInSeconds
+    );
+    expect(refreshResponse.body.webSocketTokenExpiryEpoch).not.toBe(
+      loginResponse.body.webSocketTokenExpiryEpoch
+    );
+    expect(refreshResponse.body.webSocketTokenExpiryDate).not.toBe(
+      loginResponse.body.webSocketTokenExpiryDate
+    );
+
+    const refreshTokenManager = await CacheTokenManager.getInstance();
     const isValid = await refreshTokenManager.validateRefreshToken(
       userResponse.id,
       refreshResponse.body.refreshToken
@@ -370,22 +562,30 @@ describe('POST /auth/refresh-token', () => {
     });
 
     expect(loginResponse.statusCode).toBe(200);
-    expect(loginResponse.body.token).toBeDefined();
-    expect(loginResponse.body.expiresIn).toBeDefined();
+    expect(loginResponse.body.jwt).toBeDefined();
+    expect(loginResponse.body.expiresInSeconds).toBeDefined();
+    expect(loginResponse.body.expiryEpoch).toBeDefined();
+    expect(loginResponse.body.expiryDate).toBeDefined();
     expect(loginResponse.body.refreshToken).toBeDefined();
-    expect(loginResponse.body.refreshTokenExpires).toBeDefined();
+    expect(loginResponse.body.refreshTokenExpiresInSeconds).toBeDefined();
+    expect(loginResponse.body.refreshTokenExpiryEpoch).toBeDefined();
+    expect(loginResponse.body.refreshTokenExpiryDate).toBeDefined();
+    expect(loginResponse.body.webSocketToken).toBeDefined();
+    expect(loginResponse.body.webSocketTokenExpiresInSeconds).toBeDefined();
+    expect(loginResponse.body.webSocketTokenExpiryEpoch).toBeDefined();
+    expect(loginResponse.body.webSocketTokenExpiryDate).toBeDefined();
 
     const invalidateResponse = await request(app)
-      .post('/auth/revoke-token')
+      .post('/auth/revoke-tokens')
       .set('Accept', 'application/json')
-      .set('Authorization', `Bearer ${loginResponse.body.token}`)
+      .set('Authorization', `Bearer ${loginResponse.body.jwt}`)
       .set('x-refresh-token', loginResponse.body.refreshToken);
 
     expect(invalidateResponse.statusCode).toBe(200);
 
     const refreshResponse = await request(app)
-      .post('/auth/refresh-token')
-      .set('x-refresh-token', loginResponse.body.refreshToken)
+      .post('/auth/refresh-tokens')
+      .set('x-refresh-token', loginResponse.body.jwt)
       .send({ userID: userResponse.id });
 
     expect(refreshResponse.statusCode).toBe(401);
@@ -400,20 +600,20 @@ describe('POST /auth/refresh-token', () => {
     );
     userIDs.push(userResponse.id);
 
-    const jwtToken = issueJWT(userResponse, 1);
-    expect(jwtToken.expires).toBe(1);
+    const jwtToken = issueTokens(userResponse, 1);
+    expect(jwtToken.expiresInSeconds).toBe(1);
 
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
     const response = await request(app)
-      .post('/auth/revoke-token')
+      .post('/auth/revoke-tokens')
       .set('Authorization', jwtToken.token)
       .send({ userID: userResponse.id });
 
     expect(response.statusCode).toBe(401);
   });
 
-  it('verify refresh token expiry', async () => {
+  it('verify refresh token and webSocket token expiry', async () => {
     const authService = createAuthService(userStore);
 
     const userResponse = await authService.signup(
@@ -428,8 +628,13 @@ describe('POST /auth/refresh-token', () => {
     });
 
     const refreshTokenFromBody = loginResponse.body.refreshToken;
-    const refreshTokenManager = await RefreshTokenManager.getInstance();
-    const refreshTokenFromCache = await refreshTokenManager.getRefreshToken(
+    const webSocketTokenFromBody = loginResponse.body.webSocketToken;
+
+    const tokenManager = await CacheTokenManager.getInstance();
+    const refreshTokenFromCache = await tokenManager.getRefreshToken(
+      userResponse.id
+    );
+    const webSocketTokenFromCache = await tokenManager.getWebSocketToken(
       userResponse.id
     );
 
@@ -437,18 +642,27 @@ describe('POST /auth/refresh-token', () => {
     expect(refreshTokenFromCache).toBeDefined();
     expect(refreshTokenFromBody).toBe(refreshTokenFromCache);
 
-    await refreshTokenManager.setRefreshTokenExpiration(userResponse.id, 1);
+    expect(webSocketTokenFromBody).toBeDefined();
+    expect(webSocketTokenFromCache).toBeDefined();
+    expect(webSocketTokenFromBody).toBe(webSocketTokenFromCache);
+
+    await tokenManager.setRefreshTokenExpiration(userResponse.id, 1);
+    await tokenManager.setWebSocketTokenExpiration(userResponse.id, 1);
 
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
-    const refreshTokenFromCache2 = await refreshTokenManager.getRefreshToken(
+    const refreshTokenFromCache2 = await tokenManager.getRefreshToken(
       userResponse.id
     );
-
     expect(refreshTokenFromCache2).toBeNull();
 
+    const webSocketTokenFromCache2 = await tokenManager.getWebSocketToken(
+      userResponse.id
+    );
+    expect(webSocketTokenFromCache2).toBeNull();
+
     const refreshResponse = await request(app)
-      .post('/auth/refresh-token')
+      .post('/auth/refresh-tokens')
       .set('x-refresh-token', refreshTokenFromBody)
       .send({ userID: userResponse.id });
 
@@ -463,9 +677,10 @@ describe('POST /auth/revoke-token', () => {
   afterEach(async () => {
     if (userIDs && userIDs.length > 0) {
       await db.deleteFrom('user').where('id', 'in', userIDs).execute();
-      const refreshTokenManager = await RefreshTokenManager.getInstance();
+      const refreshTokenManager = await CacheTokenManager.getInstance();
       for (const userID of userIDs) {
         refreshTokenManager.invalidateRefreshToken(userID);
+        refreshTokenManager.invalidateWebSocketToken(userID);
       }
     }
   });
@@ -485,21 +700,27 @@ describe('POST /auth/revoke-token', () => {
     });
 
     expect(loginResponse.statusCode).toBe(200);
-    expect(loginResponse.body.token).toBeDefined();
-    expect(loginResponse.body.expiresIn).toBeDefined();
+    expect(loginResponse.body.jwt).toBeDefined();
+    expect(loginResponse.body.expiresInSeconds).toBeDefined();
+    expect(loginResponse.body.expiryEpoch).toBeDefined();
+    expect(loginResponse.body.expiryDate).toBeDefined();
     expect(loginResponse.body.refreshToken).toBeDefined();
-    expect(loginResponse.body.refreshTokenExpires).toBeDefined();
+    expect(loginResponse.body.refreshTokenExpiresInSeconds).toBeDefined();
+    expect(loginResponse.body.refreshTokenExpiryEpoch).toBeDefined();
+    expect(loginResponse.body.refreshTokenExpiryDate).toBeDefined();
+    expect(loginResponse.body.webSocketToken).toBeDefined();
+    expect(loginResponse.body.webSocketTokenExpiresInSeconds).toBeDefined();
 
     const invalidateResponse = await request(app)
-      .post('/auth/revoke-token')
-      .set('Authorization', `Bearer ${loginResponse.body.token}`)
+      .post('/auth/revoke-tokens')
+      .set('Authorization', `Bearer ${loginResponse.body.jwt}`)
       .set('x-refresh-token', loginResponse.body.refreshToken);
 
     expect(invalidateResponse.statusCode).toBe(200);
 
     const revokeResponse = await request(app)
-      .post('/auth/revoke-token')
-      .set('Authorization', `Bearer ${loginResponse.body.token}`)
+      .post('/auth/revoke-tokens')
+      .set('Authorization', `Bearer ${loginResponse.body.jwt}`)
       .set('x-refresh-token', loginResponse.body.refreshToken);
 
     expect(revokeResponse.statusCode).toBe(200);
@@ -520,14 +741,20 @@ describe('POST /auth/revoke-token', () => {
     });
 
     expect(loginResponse.statusCode).toBe(200);
-    expect(loginResponse.body.token).toBeDefined();
-    expect(loginResponse.body.expiresIn).toBeDefined();
+    expect(loginResponse.body.jwt).toBeDefined();
+    expect(loginResponse.body.expiresInSeconds).toBeDefined();
+    expect(loginResponse.body.expiryEpoch).toBeDefined();
+    expect(loginResponse.body.expiryDate).toBeDefined();
     expect(loginResponse.body.refreshToken).toBeDefined();
-    expect(loginResponse.body.refreshTokenExpires).toBeDefined();
+    expect(loginResponse.body.refreshTokenExpiresInSeconds).toBeDefined();
+    expect(loginResponse.body.refreshTokenExpiryEpoch).toBeDefined();
+    expect(loginResponse.body.refreshTokenExpiryDate).toBeDefined();
+    expect(loginResponse.body.webSocketToken).toBeDefined();
+    expect(loginResponse.body.webSocketTokenExpiresInSeconds).toBeDefined();
 
     const revokeResponse = await request(app)
-      .post('/auth/revoke-token')
-      .set('Authorization', `Bearer ${loginResponse.body.token}`)
+      .post('/auth/revoke-tokens')
+      .set('Authorization', `Bearer ${loginResponse.body.jwt}`)
       .set('x-refresh-token', loginResponse.body.refreshToken);
 
     expect(revokeResponse.statusCode).toBe(200);
@@ -548,13 +775,21 @@ describe('POST /auth/revoke-token', () => {
     });
 
     expect(loginResponse.statusCode).toBe(200);
-    expect(loginResponse.body.token).toBeDefined();
-    expect(loginResponse.body.expiresIn).toBeDefined();
+    expect(loginResponse.body.jwt).toBeDefined();
+    expect(loginResponse.body.expiresInSeconds).toBeDefined();
+    expect(loginResponse.body.expiryEpoch).toBeDefined();
+    expect(loginResponse.body.expiryDate).toBeDefined();
     expect(loginResponse.body.refreshToken).toBeDefined();
-    expect(loginResponse.body.refreshTokenExpires).toBeDefined();
+    expect(loginResponse.body.refreshTokenExpiresInSeconds).toBeDefined();
+    expect(loginResponse.body.refreshTokenExpiryEpoch).toBeDefined();
+    expect(loginResponse.body.refreshTokenExpiryDate).toBeDefined();
+    expect(loginResponse.body.webSocketToken).toBeDefined();
+    expect(loginResponse.body.webSocketTokenExpiresInSeconds).toBeDefined();
+    expect(loginResponse.body.webSocketTokenExpiryEpoch).toBeDefined();
+    expect(loginResponse.body.webSocketTokenExpiryDate).toBeDefined();
 
     const revokeResponse = await request(app)
-      .post('/auth/revoke-token')
+      .post('/auth/revoke-tokens')
       .set('Authorization', 'invalid-token')
       .set('x-refresh-token', loginResponse.body.refreshToken);
 
