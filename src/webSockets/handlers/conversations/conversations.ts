@@ -5,7 +5,7 @@ import { AuthenticatedWebSocket } from '../../setup';
 import { CustomError } from '@/errors';
 import { validateWebSocketToken } from '../utils';
 import setupPing from '../../ping';
-import registerPipeline from './pipelines';
+import registerPipeline, { sendMessage } from './pipelines';
 
 type Data = {
   token: string;
@@ -43,8 +43,18 @@ const conversationWssHandler = (): Server<
       const data: Data = JSON.parse(message);
 
       console.log('[conversationWss]: data.message =>', data.message);
+      console.log(
+        '[conversationWss]: is client authenticated =>',
+        ws.isAuthenticated
+      );
 
-      if (data && data.token) {
+      if (
+        !ws.isAuthenticated &&
+        data &&
+        data.type === 'authenticate' &&
+        data.token
+      ) {
+        console.log('[conversationWss]: is message to authenticate');
         try {
           const userID = validateWebSocketToken(data.token);
           if (!userID) {
@@ -54,37 +64,29 @@ const conversationWssHandler = (): Server<
             throw new CustomError(401, 'Invalid JWT token');
           }
 
-          console.log('[conversationWss]: valid JWT token -> message is valid');
-          ws.isAuthenticated = true;
-
-          if (data.type === 'authenticate') {
-            console.log('[conversationWss]: is message to authenticate');
-            ws.send(
-              JSON.stringify({
-                type: 'authenticate',
-                message: 'authentication successful',
-                isValid: true,
-                userID: userID,
-              })
-            );
-            registerPipeline(ws);
-          }
-        } catch (err) {
-          console.log('[conversationWss]: error', err);
-          ws.send(
-            JSON.stringify({
-              type: 'authenticate',
-              message: 'authentication failed',
-              isValid: false,
-            })
+          console.log(
+            '[conversationWss]: valid JWT token -> set user as authenticated'
           );
+          ws.userID = userID;
+          ws.isAuthenticated = true;
+          sendMessage(ws, 'authentication successful', 'authenticate', true);
+          registerPipeline(ws, wss.clients as Set<AuthenticatedWebSocket>);
+        } catch (err) {
+          console.log('[conversationWss]: authentication failed', err);
+          sendMessage(ws, 'authentication failed', 'error', false);
           ws.terminate();
         }
-      } else {
+      } else if (!ws.isAuthenticated) {
         console.log(
-          '[conversationWss]: authentication failed - message has no token'
+          '[conversationWss]: is message to send but not authenticated'
         );
-        ws.send('[conversationWss] authentication failed');
+        sendMessage(ws, 'not authenticated', 'error', false);
+        ws.terminate();
+      } else if (ws.isAuthenticated && data && data.type === 'message') {
+        console.log('[conversationWss]: is message to send');
+      } else {
+        console.log('[conversationWss]: unknown message type');
+        sendMessage(ws, 'unknown message type', 'error', false);
         ws.terminate();
       }
     });
@@ -94,7 +96,7 @@ const conversationWssHandler = (): Server<
       console.log('[conversationWss]: closed', wss.clients.size);
     });
 
-    ws.send('[conversationWss] connection established.');
+    sendMessage(ws, 'connection established', 'info', true);
   });
 
   return wss;

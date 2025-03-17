@@ -16,7 +16,7 @@ const setupPing = (clients: Set<AuthenticatedWebSocket>) => {
       client.ping(() => {});
       // client.send(`[webSocket][broadcast] ping`);
     }
-  }, 5000);
+  }, 15000);
 
   return interval;
 };

@@ -9,6 +9,7 @@ export type AuthenticatedWebSocket = WebSocket & {
   isAlive: boolean;
   isAuthenticated: boolean;
   params?: Record<string, string>;
+  userID?: number;
 };
 
 // accepts an http server
