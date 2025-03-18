@@ -4,7 +4,6 @@ import { Server, WebSocket } from 'ws';
 import { AuthenticatedWebSocket } from '../../setup';
 import { CustomError } from '@/errors';
 import { validateWebSocketToken } from '../utils';
-import setupPing from '../../ping';
 import registerPipeline, { sendMessage } from './pipelines';
 
 type Data = {
@@ -23,8 +22,10 @@ const conversationWssHandler = (): Server<
   // what to do after a connection is established
   wss.on('connection', (ws: AuthenticatedWebSocket) => {
     // print number of active connections
-    console.log('[conversationWss]: connected', wss.clients.size);
+    console.log('[conversationWss]: <== connected user', ws.userID);
     console.log('[conversationWss]: conversation params:', ws.params);
+    console.log('[conversationWss]: total clients connected', wss.clients.size);
+    console.log('-----------------------------------------------------');
 
     ws.isAuthenticated = false;
     ws.isAlive = true;
@@ -34,7 +35,7 @@ const conversationWssHandler = (): Server<
       ws.isAlive = true;
     });
 
-    setupPing(wss.clients as Set<AuthenticatedWebSocket>);
+    // setupPing(wss.clients as Set<AuthenticatedWebSocket>);
 
     // handle message events
     ws.on('message', (message: string) => {
@@ -93,7 +94,14 @@ const conversationWssHandler = (): Server<
 
     // handle close event
     ws.on('close', () => {
-      console.log('[conversationWss]: closed', wss.clients.size);
+      console.log(
+        '[conversationWss]: ==> connection closed for user',
+        ws.userID
+      );
+      console.log(
+        '[conversationWss]: closed -> clients remaining:',
+        wss.clients.size
+      );
     });
 
     sendMessage(ws, 'connection established', 'info', true);

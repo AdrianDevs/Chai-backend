@@ -7,7 +7,7 @@ import { User } from '@/database/types/user';
 import passport from 'passport';
 import { CustomError } from '@/errors';
 
-export const JWT_EXPIRATION = 15 * 60; // 15 minutes in seconds
+export const JWT_EXPIRATION = 5; // 15 minutes in seconds
 export const REFRESH_TOKEN_EXPIRATION = 7 * 24 * 60 * 60; // 7 days in seconds
 export const WEBSOCKET_TOKEN_EXPIRATION = 15 * 60; // 15 minutes in seconds
 

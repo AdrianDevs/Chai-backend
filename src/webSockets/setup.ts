@@ -4,6 +4,7 @@ import { getPathAndParams, matchRoute } from './handlers/utils';
 import { CustomError } from '@/errors';
 import { CacheTokenManager } from '@/cache';
 import setupSocketHandlers from './handlers';
+import PingManager from './ping';
 
 export type AuthenticatedWebSocket = WebSocket & {
   isAlive: boolean;
@@ -18,6 +19,7 @@ const setupWebSocket = (server: Server) => {
 
   // setup socket handlers
   const socketHandlers = setupSocketHandlers();
+  const pingManager = PingManager.getInstance();
 
   server.on('upgrade', async function upgrade(request, socket, head) {
     try {
@@ -65,7 +67,25 @@ const setupWebSocket = (server: Server) => {
         function done(ws: WebSocket) {
           console.log('[webSocket]: handleUpgrade');
           // Add route params to the WebSocket instance
-          (ws as AuthenticatedWebSocket).params = routeParams || {};
+          const authenticatedWs = ws as AuthenticatedWebSocket;
+          authenticatedWs.params = routeParams || {};
+          authenticatedWs.isAlive = true;
+          authenticatedWs.isAuthenticated = true;
+          authenticatedWs.userID = parseInt(params.userID, 10);
+
+          // Add ping handlers
+          authenticatedWs.on('pong', () => {
+            authenticatedWs.isAlive = true;
+          });
+
+          // Add to ping manager
+          pingManager.addClient(authenticatedWs);
+
+          // Clean up on close
+          authenticatedWs.on('close', () => {
+            pingManager.removeClient(authenticatedWs);
+          });
+
           matchingHandler.handler.emit('connection', ws, request);
         }
       );
