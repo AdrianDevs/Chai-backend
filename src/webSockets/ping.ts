@@ -1,5 +1,8 @@
 /* eslint-disable no-console */
+import dotenv from 'dotenv';
 import { AuthenticatedWebSocket } from './setup';
+
+dotenv.config({ path: process.env.ENV_FILE || '.env' });
 
 type Timeout = ReturnType<typeof setTimeout>;
 
@@ -21,6 +24,7 @@ class PingManager {
   }
 
   public addClient(client: AuthenticatedWebSocket): void {
+    console.log('[webSocket][PingManager]: adding client', client.userID);
     this.clients.add(client);
     if (!this.interval) {
       this.startPingInterval();
@@ -28,6 +32,7 @@ class PingManager {
   }
 
   public removeClient(client: AuthenticatedWebSocket): void {
+    console.log('[webSocket][PingManager]: removing client', client.userID);
     this.clients.delete(client);
     if (this.clients.size === 0 && this.interval) {
       this.stopPingInterval();
@@ -36,23 +41,26 @@ class PingManager {
 
   private startPingInterval(): void {
     console.log('[webSocket][PingManager]: starting ping interval');
-    const uniqueIntervalName = `ping-${Math.random()
-      .toString(36)
-      .substring(2, 15)}`;
+    let pingInterval = 15000;
+    if (process.env.ENV === 'TEST') {
+      console.log(
+        '[webSocket][PingManager]: TEST environment detected -> setting ping interval to 1 second'
+      );
+      pingInterval = 500;
+    }
+
     this.interval = setInterval(() => {
       console.log(
-        `[webSocket][PingManager][${uniqueIntervalName}]: pinging`,
+        '[webSocket][PingManager]: pinging',
         this.clients.size,
-        'clients'
+        'clients',
+        'with interval',
+        pingInterval
       );
       for (const client of this.clients) {
-        console.log(
-          `[webSocket][PingManager][${uniqueIntervalName}]: pinging client`,
-          client.userID
-        );
         if (client.isAlive === false || client.isAuthenticated === false) {
           console.log(
-            `[webSocket][PingManager][${uniqueIntervalName}]: terminating client`,
+            '[webSocket][PingManager]: terminating client',
             client.userID,
             'due to inactivity'
           );
@@ -60,9 +68,14 @@ class PingManager {
           continue;
         }
         client.isAlive = false;
-        client.ping(() => {});
+        client.ping(() => {
+          console.log(
+            '[webSocket][PingManager]: ping sent to client',
+            client.userID
+          );
+        });
       }
-    }, 15000);
+    }, pingInterval);
   }
 
   private stopPingInterval(): void {

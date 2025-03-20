@@ -126,7 +126,6 @@ export class CacheTokenManager {
   /* ------------------------ WEBSOCKET TOKEN ------------------------ */
 
   private static WEBSOCKET_TOKEN_PREFIX = 'websocket_token:';
-  private static WEBSOCKET_TOKEN_EXPIRATION = 15 * 60; // 15 minutes
 
   /**
    * Stores a websocket token in Redis with an expiration

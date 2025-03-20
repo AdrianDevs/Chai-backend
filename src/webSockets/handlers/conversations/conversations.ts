@@ -1,6 +1,6 @@
 /* eslint-disable no-console */
 import { IncomingMessage } from 'http';
-import { Server, WebSocket } from 'ws';
+import { Server, WebSocket, WebSocketServer } from 'ws';
 import { AuthenticatedWebSocket } from '../../setup';
 import { CustomError } from '@/errors';
 import { validateWebSocketToken } from '../utils';
@@ -17,7 +17,8 @@ const conversationWssHandler = (): Server<
   typeof IncomingMessage
 > => {
   console.log('[conversationWss]: conversationWssHandler initialized');
-  const wss = new WebSocket.Server({ noServer: true });
+  const wss = new WebSocketServer({ noServer: true });
+  // const pingManager = PingManager.getInstance();
 
   // what to do after a connection is established
   wss.on('connection', (ws: AuthenticatedWebSocket) => {
@@ -31,11 +32,12 @@ const conversationWssHandler = (): Server<
     ws.isAlive = true;
 
     ws.on('pong', () => {
-      console.log('[conversationWss]: ping => pong');
+      console.log('[conversationWss]: pong received');
       ws.isAlive = true;
     });
 
-    // setupPing(wss.clients as Set<AuthenticatedWebSocket>);
+    // Add client to ping manager
+    // pingManager.addClient(ws);
 
     // handle message events
     ws.on('message', (message: string) => {
@@ -102,6 +104,8 @@ const conversationWssHandler = (): Server<
         '[conversationWss]: closed -> clients remaining:',
         wss.clients.size
       );
+      // Remove client from ping manager
+      // pingManager.removeClient(ws);
     });
 
     sendMessage(ws, 'connection established', 'info', true);
