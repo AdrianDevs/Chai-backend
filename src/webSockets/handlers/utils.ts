@@ -62,12 +62,6 @@ export function matchRoute(pattern: string, path: string): RouteParams | null {
   const { regex, paramNames } = createRouteRegex(pattern);
   const match = path.match(regex);
 
-  // console.log('[webSocket][matchRoute]: pattern', pattern);
-  // console.log('[webSocket][matchRoute]: path', path);
-  // console.log('[webSocket][matchRoute]: regex', regex);
-  // console.log('[webSocket][matchRoute]: paramNames', paramNames);
-  // console.log('[webSocket][matchRoute]: match', match);
-
   if (!match) {
     return null;
   }

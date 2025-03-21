@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 import { AuthenticatedWebSocket } from '@/webSockets/setup';
 import createService from '@/routes/conversationUsers/service';
 import convoStore from '@/routes/conversation/store';
@@ -8,13 +7,9 @@ const registerPipeline = (
   userClient: AuthenticatedWebSocket,
   clients: Set<AuthenticatedWebSocket>
 ) => {
-  console.log('[webSocket][onRegister]: onRegister');
-
   individualPipeline(userClient, clients);
 
-  userClient.on('close', () => {
-    console.log('[webSocket][onRegister]: connection closed');
-  });
+  userClient.on('close', () => {});
 };
 
 export default registerPipeline;
@@ -25,17 +20,12 @@ const individualPipeline = async (
   userClient: AuthenticatedWebSocket,
   clients: Set<AuthenticatedWebSocket>
 ) => {
-  console.log('[webSocket][individual]: Individual pipeline');
-
   userClient.on('message', async (message: string) => {
     const data = JSON.parse(message);
-    console.log('[webSocket][individual]: message received:', data.message);
-    console.log('[webSocket][individual]: userID', userClient.userID);
-    console.log('[webSocket][individual]: params', userClient.params);
 
     if (userClient.userID && userClient.params?.conversationID) {
       await sendMessageToUsersInConversation(
-        userClient.userID,
+        userClient,
         parseInt(userClient.params.conversationID),
         clients,
         data.message
@@ -47,37 +37,36 @@ const individualPipeline = async (
 };
 
 const sendMessageToUsersInConversation = async (
-  userID: number,
+  userClient: AuthenticatedWebSocket,
   conversationID: number,
   clients: Set<AuthenticatedWebSocket>,
   message: MessageContent
 ) => {
   const service = createService(convoStore, convoUserStore);
-  const users = await service.findUsersInConversation(userID, conversationID);
+  if (!userClient.userID) {
+    return;
+  }
+
+  const users = await service.findUsersInConversation(
+    userClient.userID,
+    conversationID
+  );
 
   if (!users) {
     return;
   }
 
   // filter users so that we only send to users who are in clients
-  const allFilteredUsers = users.filter((user) =>
+  const filteredUsers = users.filter((user) =>
     Array.from(clients).some((client) => client.userID === user.id)
   );
 
-  // filter out the userID that is sending the message
-  const filteredUsers = allFilteredUsers.filter((user) => user.id !== userID);
-
-  console.log(
-    '[webSocket][sendMessageToUsersInConversation]: filteredUsers',
-    filteredUsers
-  );
-
   // send message to filtered users
-  for (const user of filteredUsers) {
-    const client = Array.from(clients).find(
-      (client) => client.userID === user.id
-    );
-    if (client) {
+  for (const client of clients) {
+    if (filteredUsers.some((user) => user.id === client.userID)) {
+      if (client.id === userClient.id) {
+        continue;
+      }
       sendMessage(client, message, 'message', true);
     }
   }

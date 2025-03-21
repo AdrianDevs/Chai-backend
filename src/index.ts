@@ -20,7 +20,7 @@ console.log('[server]: Starting server');
 dotenv.config({ path: process.env.ENV_FILE || '.env' });
 console.log('[env]: Environment: ', process.env.ENV);
 console.log('[env]: Node Environment: ', process.env.NODE_ENV);
-console.log('[cors]: cors-origin: ', process.env.CORS_ORIGIN);
+console.log('[env]: cors-origin: ', process.env.CORS_ORIGIN);
 
 const app = express();
 const port = process.env.PORT || 8080;

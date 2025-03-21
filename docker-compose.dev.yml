@@ -6,6 +6,7 @@ services:
       dockerfile: Dockerfile
       target: build
     environment:
+      REDIS_HOST: redis
       POSTGRES_HOST: postgres
     ports:
       - '8080:8080'

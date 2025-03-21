@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 import dotenv from 'dotenv';
 import { AuthenticatedWebSocket } from './setup';
 
@@ -24,7 +23,6 @@ class PingManager {
   }
 
   public addClient(client: AuthenticatedWebSocket): void {
-    console.log('[webSocket][PingManager]: adding client', client.userID);
     this.clients.add(client);
     if (!this.interval) {
       this.startPingInterval();
@@ -32,7 +30,6 @@ class PingManager {
   }
 
   public removeClient(client: AuthenticatedWebSocket): void {
-    console.log('[webSocket][PingManager]: removing client', client.userID);
     this.clients.delete(client);
     if (this.clients.size === 0 && this.interval) {
       this.stopPingInterval();
@@ -40,9 +37,9 @@ class PingManager {
   }
 
   private startPingInterval(): void {
-    console.log('[webSocket][PingManager]: starting ping interval');
     let pingInterval = 15000;
     if (process.env.ENV === 'TEST') {
+      // eslint-disable-next-line no-console
       console.log(
         '[webSocket][PingManager]: TEST environment detected -> setting ping interval to 1 second'
       );
@@ -50,6 +47,7 @@ class PingManager {
     }
 
     this.interval = setInterval(() => {
+      // eslint-disable-next-line no-console
       console.log(
         '[webSocket][PingManager]: pinging',
         this.clients.size,
@@ -59,21 +57,17 @@ class PingManager {
       );
       for (const client of this.clients) {
         if (client.isAlive === false || client.isAuthenticated === false) {
+          // eslint-disable-next-line no-console
           console.log(
             '[webSocket][PingManager]: terminating client',
-            client.userID,
+            client.id,
             'due to inactivity'
           );
           client.terminate();
           continue;
         }
         client.isAlive = false;
-        client.ping(() => {
-          console.log(
-            '[webSocket][PingManager]: ping sent to client',
-            client.userID
-          );
-        });
+        client.ping(() => {});
       }
     }, pingInterval);
   }

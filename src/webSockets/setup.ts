@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 import { Server, WebSocket } from 'ws';
 import { getPathAndParams, matchRoute } from './handlers/utils';
 import { CustomError } from '@/errors';
@@ -7,6 +6,7 @@ import setupSocketHandlers from './handlers';
 import PingManager from './ping';
 
 export type AuthenticatedWebSocket = WebSocket & {
+  id: string;
   isAlive: boolean;
   isAuthenticated: boolean;
   params?: Record<string, string>;
@@ -15,24 +15,19 @@ export type AuthenticatedWebSocket = WebSocket & {
 
 // accepts an http server
 const setupWebSocket = (server: Server) => {
-  console.log('[webSocket]: setupWebSocket');
-
   // setup socket handlers
   const socketHandlers = setupSocketHandlers();
   const pingManager = PingManager.getInstance();
 
   server.on('upgrade', async function upgrade(request, socket, head) {
     try {
-      console.log('[webSocket]: upgrade');
-
       const { path: requestPath, params } = getPathAndParams<{
         token: string;
         userID: string;
       }>(request.url);
-      console.log('[webSocket]: path', requestPath);
-      console.log('[webSocket]: params', params);
-
       if (!params.token || !params.userID) {
+        // eslint-disable-next-line no-console
+        console.error('[webSocket]: No token or userId provided');
         throw new CustomError(401, 'No token or userId provided');
       }
 
@@ -43,6 +38,8 @@ const setupWebSocket = (server: Server) => {
       );
 
       if (!isValid) {
+        // eslint-disable-next-line no-console
+        console.error('[webSocket]: Invalid token');
         throw new CustomError(401, 'Invalid token');
       }
 
@@ -53,19 +50,19 @@ const setupWebSocket = (server: Server) => {
       });
 
       if (!matchingHandler) {
+        // eslint-disable-next-line no-console
+        console.error('[webSocket]: Invalid path');
         throw new CustomError(404, 'Invalid path');
       }
 
       // Extract route parameters
       const routeParams = matchRoute(matchingHandler.pattern, requestPath);
-      console.log('[webSocket]: routeParams', routeParams);
 
       matchingHandler.handler.handleUpgrade(
         request,
         socket,
         head,
         function done(ws: WebSocket) {
-          console.log('[webSocket]: handleUpgrade');
           // Add route params to the WebSocket instance
           const authenticatedWs = ws as AuthenticatedWebSocket;
           authenticatedWs.params = routeParams || {};
@@ -90,7 +87,8 @@ const setupWebSocket = (server: Server) => {
         }
       );
     } catch (err) {
-      console.log('[webSocket]: upgrade exception', err);
+      // eslint-disable-next-line no-console
+      console.error('[webSocket]: upgrade exception', err);
       socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
       socket.destroy();
       return;

@@ -17,7 +17,27 @@ class RedisClientSingleton {
 
       RedisClientSingleton.client.on('error', (err) => {
         // eslint-disable-next-line no-console
-        console.error('Redis Client Error', err);
+        console.error('[redis]: Redis Client Error', err.message);
+      });
+
+      RedisClientSingleton.client.on('connect', () => {
+        // eslint-disable-next-line no-console
+        console.log('[redis]: Redis Client Connected');
+      });
+
+      RedisClientSingleton.client.on('ready', () => {
+        // eslint-disable-next-line no-console
+        console.log('[redis]: Redis Client Ready');
+      });
+
+      RedisClientSingleton.client.on('reconnecting', () => {
+        // eslint-disable-next-line no-console
+        console.log('[redis]: Redis Client Reconnecting');
+      });
+
+      RedisClientSingleton.client.on('end', () => {
+        // eslint-disable-next-line no-console
+        console.log('[redis]: Redis Client Ended');
       });
 
       await RedisClientSingleton.client.connect();
