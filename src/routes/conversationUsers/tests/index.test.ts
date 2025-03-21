@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { db } from '../../../database/database';
 import createAuthService from '../../auth/service';
 import userStore from '../../users/store';
-import { RefreshTokenManager } from '../../../cache/helpers';
+import { CacheTokenManager } from '../../../cache/helpers';
 
 describe('GET /conversations/:conversation_id/users', () => {
   const usernamePrefix = 'test-convo-user-user-';
@@ -15,8 +15,9 @@ describe('GET /conversations/:conversation_id/users', () => {
     if (userIDs && userIDs.length > 0) {
       for (const userID of userIDs) {
         await db.deleteFrom('user').where('id', '=', userID).execute();
-        const refreshTokenManager = await RefreshTokenManager.getInstance();
+        const refreshTokenManager = await CacheTokenManager.getInstance();
         refreshTokenManager.invalidateRefreshToken(userID);
+        refreshTokenManager.invalidateWebSocketToken(userID);
       }
     }
     if (conversationIDs && conversationIDs.length > 0) {
@@ -46,7 +47,7 @@ describe('GET /conversations/:conversation_id/users', () => {
     const response = await request(app)
       .get('/conversations/wrong/users')
       .set('Accept', 'application/json')
-      .set('Authorization', `${loginResponse.body.token}`);
+      .set('Authorization', `Bearer ${loginResponse.body.jwt}`);
 
     expect(response.status).toBe(400);
   });
@@ -82,7 +83,7 @@ describe('GET /conversations/:conversation_id/users', () => {
         user_ids: [userResponse1.id],
       })
       .set('Accept', 'application/json')
-      .set('Authorization', `${loginResponse1.body.token}`);
+      .set('Authorization', `Bearer ${loginResponse1.body.jwt}`);
     conversationIDs.push(convoResponse.body.id);
 
     const userResponse3 = await authService.signup(
@@ -98,7 +99,7 @@ describe('GET /conversations/:conversation_id/users', () => {
     const response = await request(app)
       .get(`/conversations/${convoResponse.body.id}/users`)
       .set('Accept', 'application/json')
-      .set('Authorization', `${loginResponse3.body.token}`);
+      .set('Authorization', `Bearer ${loginResponse3.body.jwt}`);
 
     expect(response.status).toBe(403);
   });
@@ -119,7 +120,7 @@ describe('GET /conversations/:conversation_id/users', () => {
     const response = await request(app)
       .get(`/conversations/1/users`)
       .set('Accept', 'application/json')
-      .set('Authorization', `${loginResponse.body.token}`);
+      .set('Authorization', `Bearer ${loginResponse.body.jwt}`);
 
     expect(response.status).toBe(404);
   });
@@ -150,13 +151,13 @@ describe('GET /conversations/:conversation_id/users', () => {
         user_ids: [userResponse1.id],
       })
       .set('Accept', 'application/json')
-      .set('Authorization', `${loginResponse.body.token}`);
+      .set('Authorization', `Bearer ${loginResponse.body.jwt}`);
     conversationIDs.push(convoResponse.body.id);
 
     const response = await request(app)
       .get(`/conversations/${convoResponse.body.id}/users`)
       .set('Accept', 'application/json')
-      .set('Authorization', `${loginResponse.body.token}`);
+      .set('Authorization', `Bearer ${loginResponse.body.jwt}`);
 
     expect(response.status).toBe(200);
     expect(response.body.length).toBe(2);
@@ -180,8 +181,9 @@ describe('POST /conversations/:id/users', () => {
     if (userIDs && userIDs.length > 0) {
       for (const userID of userIDs) {
         await db.deleteFrom('user').where('id', '=', userID).execute();
-        const refreshTokenManager = await RefreshTokenManager.getInstance();
+        const refreshTokenManager = await CacheTokenManager.getInstance();
         refreshTokenManager.invalidateRefreshToken(userID);
+        refreshTokenManager.invalidateWebSocketToken(userID);
       }
     }
     if (conversationIDs && conversationIDs.length > 0) {
@@ -211,7 +213,7 @@ describe('POST /conversations/:id/users', () => {
     const response = await request(app)
       .post('/conversations/wrong/users')
       .set('Accept', 'application/json')
-      .set('Authorization', `${loginResponse.body.token}`);
+      .set('Authorization', `Bearer ${loginResponse.body.jwt}`);
 
     expect(response.status).toBe(400);
   });
@@ -232,7 +234,7 @@ describe('POST /conversations/:id/users', () => {
     const response = await request(app)
       .post('/conversations/1/users')
       .set('Accept', 'application/json')
-      .set('Authorization', `${loginResponse.body.token}`);
+      .set('Authorization', `Bearer ${loginResponse.body.jwt}`);
 
     expect(response.status).toBe(400);
   });
@@ -263,14 +265,14 @@ describe('POST /conversations/:id/users', () => {
         user_ids: [userResponse2.id],
       })
       .set('Accept', 'application/json')
-      .set('Authorization', `${loginResponse1.body.token}`);
+      .set('Authorization', `Bearer ${loginResponse1.body.jwt}`);
     conversationIDs.push(convoResponse.body.id);
 
     const response = await request(app)
       .post(`/conversations/${convoResponse.body.id}/users`)
       .send({ user_id: userResponse2.id })
       .set('Accept', 'application/json')
-      .set('Authorization', `${loginResponse1.body.token}`);
+      .set('Authorization', `Bearer ${loginResponse1.body.jwt}`);
 
     expect(response.status).toBe(400);
   });
@@ -301,14 +303,14 @@ describe('POST /conversations/:id/users', () => {
         user_ids: [userResponse2.id],
       })
       .set('Accept', 'application/json')
-      .set('Authorization', `${loginResponse1.body.token}`);
+      .set('Authorization', `Bearer ${loginResponse1.body.jwt}`);
     conversationIDs.push(convoResponse.body.id);
 
     const response = await request(app)
       .post(`/conversations/${convoResponse.body.id}/users`)
       .send({ user_id: userResponse1.id })
       .set('Accept', 'application/json')
-      .set('Authorization', `${loginResponse1.body.token}`);
+      .set('Authorization', `Bearer ${loginResponse1.body.jwt}`);
 
     expect(response.status).toBe(400);
   });
@@ -344,7 +346,7 @@ describe('POST /conversations/:id/users', () => {
         user_ids: [userResponse1.id],
       })
       .set('Accept', 'application/json')
-      .set('Authorization', `${loginResponse1.body.token}`);
+      .set('Authorization', `Bearer ${loginResponse1.body.jwt}`);
     conversationIDs.push(convoResponse.body.id);
 
     const userResponse3 = await authService.signup(
@@ -361,7 +363,7 @@ describe('POST /conversations/:id/users', () => {
       .post(`/conversations/${convoResponse.body.id}/users`)
       .send({ user_id: userResponse3.id })
       .set('Accept', 'application/json')
-      .set('Authorization', `${loginResponse3.body.token}`);
+      .set('Authorization', `Bearer ${loginResponse3.body.jwt}`);
 
     expect(response.status).toBe(403);
   });
@@ -383,7 +385,7 @@ describe('POST /conversations/:id/users', () => {
       .post(`/conversations/1/users`)
       .send({ user_id: userResponse1.id })
       .set('Accept', 'application/json')
-      .set('Authorization', `${loginResponse.body.token}`);
+      .set('Authorization', `Bearer ${loginResponse.body.jwt}`);
 
     expect(response.status).toBe(404);
   });
@@ -414,7 +416,7 @@ describe('POST /conversations/:id/users', () => {
         user_ids: [userResponse1.id],
       })
       .set('Accept', 'application/json')
-      .set('Authorization', `${loginResponse.body.token}`);
+      .set('Authorization', `Bearer ${loginResponse.body.jwt}`);
     conversationIDs.push(convoResponse.body.id);
 
     const userResponse3 = await authService.signup(
@@ -427,7 +429,7 @@ describe('POST /conversations/:id/users', () => {
       .post(`/conversations/${convoResponse.body.id}/users`)
       .send({ user_id: userResponse3.id })
       .set('Accept', 'application/json')
-      .set('Authorization', `${loginResponse.body.token}`);
+      .set('Authorization', `Bearer ${loginResponse.body.jwt}`);
 
     expect(response.status).toBe(201);
     expect(response.body.user_id).toBe(userResponse3.id);
@@ -435,7 +437,7 @@ describe('POST /conversations/:id/users', () => {
     const usersResponse = await request(app)
       .get(`/conversations/${convoResponse.body.id}/users`)
       .set('Accept', 'application/json')
-      .set('Authorization', `${loginResponse.body.token}`);
+      .set('Authorization', `Bearer ${loginResponse.body.jwt}`);
 
     expect(usersResponse.status).toBe(200);
     expect(usersResponse.body.length).toBe(3);
@@ -491,8 +493,9 @@ describe('DELETE /conversations/:id/users', () => {
     if (userIDs && userIDs.length > 0) {
       for (const userID of userIDs) {
         await db.deleteFrom('user').where('id', '=', userID).execute();
-        const refreshTokenManager = await RefreshTokenManager.getInstance();
+        const refreshTokenManager = await CacheTokenManager.getInstance();
         refreshTokenManager.invalidateRefreshToken(userID);
+        refreshTokenManager.invalidateWebSocketToken(userID);
       }
     }
     if (conversationIDs && conversationIDs.length > 0) {
@@ -522,7 +525,7 @@ describe('DELETE /conversations/:id/users', () => {
     const response = await request(app)
       .delete(`/conversations/wrong/users/${userResponse.id}`)
       .set('Accept', 'application/json')
-      .set('Authorization', `${loginResponse.body.token}`);
+      .set('Authorization', `Bearer ${loginResponse.body.jwt}`);
 
     expect(response.status).toBe(400);
   });
@@ -543,7 +546,7 @@ describe('DELETE /conversations/:id/users', () => {
     const response = await request(app)
       .delete('/conversations/1/users/wrong')
       .set('Accept', 'application/json')
-      .set('Authorization', `${loginResponse.body.token}`);
+      .set('Authorization', `Bearer ${loginResponse.body.jwt}`);
 
     expect(response.status).toBe(400);
   });
@@ -574,13 +577,13 @@ describe('DELETE /conversations/:id/users', () => {
         user_ids: [userResponse2.id],
       })
       .set('Accept', 'application/json')
-      .set('Authorization', `${loginResponse1.body.token}`);
+      .set('Authorization', `Bearer ${loginResponse1.body.jwt}`);
     conversationIDs.push(convoResponse.body.id);
 
     const convoGetUsersResponse = await request(app)
       .get(`/conversations/${convoResponse.body.id}/users`)
       .set('Accept', 'application/json')
-      .set('Authorization', `${loginResponse1.body.token}`);
+      .set('Authorization', `Bearer ${loginResponse1.body.jwt}`);
 
     expect(convoGetUsersResponse.status).toBe(200);
     expect(convoGetUsersResponse.body.length).toBe(2);
@@ -604,7 +607,7 @@ describe('DELETE /conversations/:id/users', () => {
         `/conversations/${convoResponse.body.id}/users/${userResponse3.id}`
       )
       .set('Accept', 'application/json')
-      .set('Authorization', `${loginResponse1.body.token}`);
+      .set('Authorization', `Bearer ${loginResponse1.body.jwt}`);
 
     expect(response.status).toBe(400);
   });
@@ -640,7 +643,7 @@ describe('DELETE /conversations/:id/users', () => {
         user_ids: [userResponse2.id],
       })
       .set('Accept', 'application/json')
-      .set('Authorization', `${loginResponse1.body.token}`);
+      .set('Authorization', `Bearer ${loginResponse1.body.jwt}`);
     conversationIDs.push(convoResponse.body.id);
 
     const userResponse3 = await authService.signup(
@@ -658,7 +661,7 @@ describe('DELETE /conversations/:id/users', () => {
         `/conversations/${convoResponse.body.id}/users/${userResponse1.id}`
       )
       .set('Accept', 'application/json')
-      .set('Authorization', `${loginResponse3.body.token}`);
+      .set('Authorization', `Bearer ${loginResponse3.body.jwt}`);
 
     expect(response.status).toBe(403);
   });
@@ -680,7 +683,7 @@ describe('DELETE /conversations/:id/users', () => {
       .delete(`/conversations/1/users`)
       .send({ user_id: userResponse1.id })
       .set('Accept', 'application/json')
-      .set('Authorization', `${loginResponse.body.token}`);
+      .set('Authorization', `Bearer ${loginResponse.body.jwt}`);
 
     expect(response.status).toBe(404);
   });
@@ -717,13 +720,13 @@ describe('DELETE /conversations/:id/users', () => {
         user_ids: [userResponse2.id, userResponse3.id],
       })
       .set('Accept', 'application/json')
-      .set('Authorization', `${loginResponse1.body.token}`);
+      .set('Authorization', `Bearer ${loginResponse1.body.jwt}`);
     conversationIDs.push(convoResponse.body.id);
 
     const convoGetUsersResponse1 = await request(app)
       .get(`/conversations/${convoResponse.body.id}/users`)
       .set('Accept', 'application/json')
-      .set('Authorization', `${loginResponse1.body.token}`);
+      .set('Authorization', `Bearer ${loginResponse1.body.jwt}`);
 
     expect(convoGetUsersResponse1.status).toBe(200);
     expect(convoGetUsersResponse1.body.length).toBe(3);
@@ -745,7 +748,7 @@ describe('DELETE /conversations/:id/users', () => {
         `/conversations/${convoResponse.body.id}/users/${userResponse3.id}`
       )
       .set('Accept', 'application/json')
-      .set('Authorization', `${loginResponse1.body.token}`);
+      .set('Authorization', `Bearer ${loginResponse1.body.jwt}`);
 
     expect(response.status).toBe(200);
     expect(response.body.user_id).toEqual(userResponse3.id);
@@ -753,7 +756,7 @@ describe('DELETE /conversations/:id/users', () => {
     const convoGetUsersResponse2 = await request(app)
       .get(`/conversations/${convoResponse.body.id}/users`)
       .set('Accept', 'application/json')
-      .set('Authorization', `${loginResponse1.body.token}`);
+      .set('Authorization', `Bearer ${loginResponse1.body.jwt}`);
 
     expect(convoGetUsersResponse2.status).toBe(200);
     expect(convoGetUsersResponse2.body.length).toBe(2);
@@ -799,13 +802,13 @@ describe('DELETE /conversations/:id/users', () => {
         user_ids: [userResponse2.id, userResponse3.id],
       })
       .set('Accept', 'application/json')
-      .set('Authorization', `${loginResponse1.body.token}`);
+      .set('Authorization', `Bearer ${loginResponse1.body.jwt}`);
     conversationIDs.push(convoResponse.body.id);
 
     const convoGetUsersResponse1 = await request(app)
       .get(`/conversations/${convoResponse.body.id}/users`)
       .set('Accept', 'application/json')
-      .set('Authorization', `${loginResponse1.body.token}`);
+      .set('Authorization', `Bearer ${loginResponse1.body.jwt}`);
 
     expect(convoGetUsersResponse1.status).toBe(200);
     expect(convoGetUsersResponse1.body.length).toBe(3);
@@ -827,7 +830,7 @@ describe('DELETE /conversations/:id/users', () => {
         `/conversations/${convoResponse.body.id}/users/${userResponse3.id}`
       )
       .set('Accept', 'application/json')
-      .set('Authorization', `${loginResponse1.body.token}`);
+      .set('Authorization', `Bearer ${loginResponse1.body.jwt}`);
 
     expect(response.status).toBe(200);
     expect(response.body.user_id).toEqual(userResponse3.id);
@@ -835,7 +838,7 @@ describe('DELETE /conversations/:id/users', () => {
     const convoGetUsersResponse2 = await request(app)
       .get(`/conversations/${convoResponse.body.id}/users`)
       .set('Accept', 'application/json')
-      .set('Authorization', `${loginResponse1.body.token}`);
+      .set('Authorization', `Bearer ${loginResponse1.body.jwt}`);
 
     expect(convoGetUsersResponse2.status).toBe(200);
     expect(convoGetUsersResponse2.body.length).toBe(2);
@@ -885,13 +888,13 @@ describe('DELETE /conversations/:id/users', () => {
         user_ids: [userResponse2.id, userResponse3.id],
       })
       .set('Accept', 'application/json')
-      .set('Authorization', `${loginResponse1.body.token}`);
+      .set('Authorization', `Bearer ${loginResponse1.body.jwt}`);
     conversationIDs.push(convoResponse.body.id);
 
     const convoGetUsersResponse1 = await request(app)
       .get(`/conversations/${convoResponse.body.id}/users`)
       .set('Accept', 'application/json')
-      .set('Authorization', `${loginResponse1.body.token}`);
+      .set('Authorization', `Bearer ${loginResponse1.body.jwt}`);
 
     expect(convoGetUsersResponse1.status).toBe(200);
     expect(convoGetUsersResponse1.body.length).toBe(3);
@@ -911,7 +914,7 @@ describe('DELETE /conversations/:id/users', () => {
     const response = await request(app)
       .delete(`/conversations/${convoResponse.body.id}`)
       .set('Accept', 'application/json')
-      .set('Authorization', `${loginResponse1.body.token}`);
+      .set('Authorization', `Bearer ${loginResponse1.body.jwt}`);
 
     expect(response.status).toBe(200);
     expect(response.body.id).toEqual(convoResponse.body.id);
@@ -919,7 +922,7 @@ describe('DELETE /conversations/:id/users', () => {
     const convoGetUsersResponse2 = await request(app)
       .get(`/conversations/${convoResponse.body.id}/users`)
       .set('Accept', 'application/json')
-      .set('Authorization', `${loginResponse1.body.token}`);
+      .set('Authorization', `Bearer ${loginResponse1.body.jwt}`);
 
     expect(convoGetUsersResponse2.status).toBe(404);
 

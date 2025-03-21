@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import createAuthService from '../../auth/service';
 import userStore from '../store';
 import { db } from '../../../database/database';
-import { RefreshTokenManager } from '../../../cache/helpers';
+import { CacheTokenManager } from '../../../cache/helpers';
 
 describe('GET /users', () => {
   let userIDs: number[] = [];
@@ -13,8 +13,9 @@ describe('GET /users', () => {
     if (userIDs && userIDs.length > 0) {
       for (const userID of userIDs) {
         await db.deleteFrom('user').where('id', '=', userID).execute();
-        const refreshTokenManager = await RefreshTokenManager.getInstance();
+        const refreshTokenManager = await CacheTokenManager.getInstance();
         refreshTokenManager.invalidateRefreshToken(userID);
+        refreshTokenManager.invalidateWebSocketToken(userID);
       }
     }
   });
@@ -37,7 +38,7 @@ describe('GET /users', () => {
     const response = await request(app)
       .get(`/users/${userIDs[0]}`)
       .set('Accept', 'application/json')
-      .set('Authorization', `${loginResponse.token}`);
+      .set('Authorization', `Bearer ${loginResponse.token}`);
 
     expect(response.statusCode).toBe(200);
     expect(response.body.id).toBe(userIDs[0]);
@@ -56,7 +57,7 @@ describe('GET /users', () => {
     const response = await request(app)
       .get(`/users/${userIDs[1]}`)
       .set('Accept', 'application/json')
-      .set('Authorization', `${loginResponse.token}`);
+      .set('Authorization', `Bearer ${loginResponse.token}`);
 
     expect(response.statusCode).toBe(403);
   });
@@ -70,8 +71,9 @@ describe('GET /users/search', () => {
     if (userIDs && userIDs.length > 0) {
       for (const userID of userIDs) {
         await db.deleteFrom('user').where('id', '=', userID).execute();
-        const refreshTokenManager = await RefreshTokenManager.getInstance();
+        const refreshTokenManager = await CacheTokenManager.getInstance();
         refreshTokenManager.invalidateRefreshToken(userID);
+        refreshTokenManager.invalidateWebSocketToken(userID);
       }
     }
   });
@@ -99,7 +101,7 @@ describe('GET /users/search', () => {
     const response = await request(app)
       .get(`/users/search?usernames=${userResponse.username}`)
       .set('Accept', 'application/json')
-      .set('Authorization', `${loginResponse.token}`);
+      .set('Authorization', `Bearer ${loginResponse.token}`);
 
     expect(response.statusCode).toBe(200);
     expect(response.body.length).toBe(1);
@@ -129,7 +131,7 @@ describe('GET /users/search', () => {
         `/users/search?usernames=${userResponse1.username}&usernames=${userResponse2.username}`
       )
       .set('Accept', 'application/json')
-      .set('Authorization', `${loginResponse.token}`);
+      .set('Authorization', `Bearer ${loginResponse.token}`);
 
     expect(response.statusCode).toBe(200);
     expect(response.body.length).toBe(2);
@@ -148,8 +150,9 @@ describe('GET /users/validate', () => {
     if (userIDs && userIDs.length > 0) {
       for (const userID of userIDs) {
         await db.deleteFrom('user').where('id', '=', userID).execute();
-        const refreshTokenManager = await RefreshTokenManager.getInstance();
+        const refreshTokenManager = await CacheTokenManager.getInstance();
         refreshTokenManager.invalidateRefreshToken(userID);
+        refreshTokenManager.invalidateWebSocketToken(userID);
       }
     }
   });
@@ -197,8 +200,9 @@ describe('DELETE /users/:id', () => {
     if (userIDs && userIDs.length > 0) {
       for (const userID of userIDs) {
         await db.deleteFrom('user').where('id', '=', userID).execute();
-        const refreshTokenManager = await RefreshTokenManager.getInstance();
+        const refreshTokenManager = await CacheTokenManager.getInstance();
         refreshTokenManager.invalidateRefreshToken(userID);
+        refreshTokenManager.invalidateWebSocketToken(userID);
       }
     }
     if (conversationIDs && conversationIDs.length > 0) {
@@ -233,7 +237,7 @@ describe('DELETE /users/:id', () => {
     const response = await request(app)
       .delete('/users/me')
       .set('Accept', 'application/json')
-      .set('Authorization', `${loginResponse.token}`);
+      .set('Authorization', `Bearer ${loginResponse.token}`);
 
     expect(response.statusCode).toBe(200);
     expect(response.body.message).toBe('User deleted');
@@ -255,7 +259,7 @@ describe('DELETE /users/:id', () => {
     const response = await request(app)
       .delete('/users/me')
       .set('Accept', 'application/json')
-      .set('Authorization', `${loginResponse.token}`);
+      .set('Authorization', `Bearer ${loginResponse.token}`);
 
     expect(response.statusCode).toBe(200);
     expect(response.body.message).toBe('User deleted');
@@ -290,7 +294,7 @@ describe('DELETE /users/:id', () => {
     const conversationResponse = await request(app)
       .post('/conversations')
       .set('Accept', 'application/json')
-      .set('Authorization', `${loginResponse1.token}`)
+      .set('Authorization', `Bearer ${loginResponse1.token}`)
       .send({
         conversation: { name: 'Test Conversation' },
         user_ids: [userResponse2.id, userResponse3.id],
@@ -305,7 +309,7 @@ describe('DELETE /users/:id', () => {
     const response = await request(app)
       .delete('/users/me')
       .set('Accept', 'application/json')
-      .set('Authorization', `${loginResponse1.token}`);
+      .set('Authorization', `Bearer ${loginResponse1.token}`);
 
     expect(response.statusCode).toBe(200);
     expect(response.body.message).toBe('User deleted');
@@ -318,7 +322,7 @@ describe('DELETE /users/:id', () => {
     const conversationUsersResponse = await request(app)
       .get(`/conversations/${conversationID}/users`)
       .set('Accept', 'application/json')
-      .set('Authorization', `${loginResponse2.token}`);
+      .set('Authorization', `Bearer ${loginResponse2.token}`);
 
     expect(conversationUsersResponse.statusCode).toBe(200);
     expect(conversationUsersResponse.body.length).toBe(2);
@@ -348,7 +352,7 @@ describe('DELETE /users/:id', () => {
     const conversationResponse1 = await request(app)
       .post('/conversations')
       .set('Accept', 'application/json')
-      .set('Authorization', `${loginResponse1.token}`)
+      .set('Authorization', `Bearer ${loginResponse1.token}`)
       .send({
         conversation: { name: 'Test Conversation' },
         user_ids: [userResponse2.id],
@@ -381,7 +385,7 @@ describe('DELETE /users/:id', () => {
     const deleteResponse1 = await request(app)
       .delete('/users/me')
       .set('Accept', 'application/json')
-      .set('Authorization', `${loginResponse1.token}`);
+      .set('Authorization', `Bearer ${loginResponse1.token}`);
 
     expect(deleteResponse1.statusCode).toBe(200);
     expect(deleteResponse1.body.message).toBe('User deleted');
@@ -395,7 +399,7 @@ describe('DELETE /users/:id', () => {
     const conversationResponse2 = await request(app)
       .get(`/conversations/${conversationID}`)
       .set('Accept', 'application/json')
-      .set('Authorization', `${loginResponse2.token}`);
+      .set('Authorization', `Bearer ${loginResponse2.token}`);
 
     expect(conversationResponse2.statusCode).toBe(200);
     expect(conversationResponse2.body.id).toBe(conversationID);
@@ -404,7 +408,7 @@ describe('DELETE /users/:id', () => {
     const conversationUsersResponse2 = await request(app)
       .get(`/conversations/${conversationID}/users`)
       .set('Accept', 'application/json')
-      .set('Authorization', `${loginResponse2.token}`);
+      .set('Authorization', `Bearer ${loginResponse2.token}`);
 
     expect(conversationUsersResponse2.statusCode).toBe(200);
     expect(conversationUsersResponse2.body.length).toBe(1);
@@ -414,7 +418,7 @@ describe('DELETE /users/:id', () => {
     const deleteResponse2 = await request(app)
       .delete('/users/me')
       .set('Accept', 'application/json')
-      .set('Authorization', `${loginResponse2.token}`);
+      .set('Authorization', `Bearer ${loginResponse2.token}`);
 
     expect(deleteResponse2.statusCode).toBe(200);
     expect(deleteResponse2.body.message).toBe('User deleted');

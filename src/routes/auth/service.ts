@@ -2,13 +2,16 @@ import { AuthServiceInterface } from './controllers';
 import { UserStoreInterface } from '@users/service';
 import { User } from '@/database/types/user';
 import {
+  generateHashToken,
   generatePassword,
-  issueJWT,
-  JwtToken,
+  HashTokenObject,
+  issueTokens,
+  TokenObject,
+  TokenType,
   validatePassword,
 } from '@/auth/helpers';
 import { CustomError } from '@/errors';
-import { RefreshTokenManager } from '@/cache/helpers';
+import { CacheTokenManager } from '@/cache/helpers';
 
 class Service implements AuthServiceInterface {
   private store: UserStoreInterface;
@@ -41,7 +44,7 @@ class Service implements AuthServiceInterface {
   public login = async (
     username: string,
     password: string
-  ): Promise<(User & JwtToken) | undefined> => {
+  ): Promise<(User & TokenObject) | undefined> => {
     const user = await this.store.findUserByUsername(username);
 
     if (!user) {
@@ -54,17 +57,18 @@ class Service implements AuthServiceInterface {
       return undefined;
     }
 
-    const tokenObject = issueJWT(user);
+    const tokenObject = issueTokens(user);
+    const refreshTokenManager = await CacheTokenManager.getInstance();
 
-    if (!tokenObject.refreshToken || !tokenObject.refreshTokenExpires) {
-      throw new CustomError(500, 'Refresh token not found');
-    }
-
-    const refreshTokenManager = await RefreshTokenManager.getInstance();
     await refreshTokenManager.storeRefreshToken(
       user.id,
       tokenObject.refreshToken,
-      tokenObject.refreshTokenExpires.getTime()
+      tokenObject.refreshTokenExpiresInSeconds
+    );
+    await refreshTokenManager.storeWebSocketToken(
+      user.id,
+      tokenObject.webSocketToken,
+      tokenObject.webSocketTokenExpiresInSeconds
     );
 
     return { ...user, ...tokenObject };
@@ -80,46 +84,61 @@ class Service implements AuthServiceInterface {
     return await this.store.findUserByUsername(username);
   };
 
-  public refreshToken = async (
+  public refreshTokens = async (
     userID: number,
     refreshToken: string
-  ): Promise<JwtToken> => {
-    const refreshTokenManager = await RefreshTokenManager.getInstance();
+  ): Promise<TokenObject> => {
+    const refreshTokenManager = await CacheTokenManager.getInstance();
 
     const isValid = await refreshTokenManager.validateRefreshToken(
       userID,
       refreshToken
     );
-
     if (!isValid) {
+      refreshTokenManager.invalidateRefreshToken(userID);
+      refreshTokenManager.invalidateWebSocketToken(userID);
       throw new CustomError(401, 'Invalid refresh token');
     }
 
     const user = await this.store.findUserById(userID);
-
     if (!user) {
       throw new CustomError(404, 'User not found');
     }
 
-    const tokenObject = issueJWT(user);
-
-    if (!tokenObject.refreshToken || !tokenObject.refreshTokenExpires) {
-      throw new CustomError(500, 'Refresh token not found');
-    }
+    const tokenObject = issueTokens(user);
 
     await refreshTokenManager.invalidateRefreshToken(userID);
     await refreshTokenManager.storeRefreshToken(
       userID,
       tokenObject.refreshToken,
-      tokenObject.refreshTokenExpires.getTime()
+      tokenObject.refreshTokenExpiresInSeconds
+    );
+    await refreshTokenManager.storeWebSocketToken(
+      userID,
+      tokenObject.webSocketToken,
+      tokenObject.webSocketTokenExpiresInSeconds
     );
 
     return tokenObject;
   };
 
-  public revokeToken = async (userID: number): Promise<void> => {
-    const refreshTokenManager = await RefreshTokenManager.getInstance();
+  public revokeTokens = async (userID: number): Promise<void> => {
+    const refreshTokenManager = await CacheTokenManager.getInstance();
     await refreshTokenManager.invalidateRefreshToken(userID);
+    await refreshTokenManager.invalidateWebSocketToken(userID);
+  };
+
+  public generateWebSocketToken = async (
+    userID: number
+  ): Promise<HashTokenObject> => {
+    const tokenObject = generateHashToken(userID, TokenType.WEBSOCKET);
+    const refreshTokenManager = await CacheTokenManager.getInstance();
+    await refreshTokenManager.storeWebSocketToken(
+      userID,
+      tokenObject.token,
+      tokenObject.expiresInSeconds
+    );
+    return tokenObject;
   };
 }
 

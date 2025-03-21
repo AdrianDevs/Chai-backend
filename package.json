@@ -57,6 +57,7 @@
     "@types/pg": "^8.11.11",
     "@types/shelljs": "^0.8.15",
     "@types/supertest": "^6.0.2",
+    "@types/ws": "^8.18.0",
     "@typescript-eslint/eslint-plugin": "^8.20.0",
     "@typescript-eslint/parser": "^8.20.0",
     "@vitest/coverage-v8": "^2.1.8",
@@ -80,6 +81,7 @@
     "vitest": "^2.1.8"
   },
   "dependencies": {
+    "@types/uuid": "^10.0.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
@@ -94,6 +96,8 @@
     "passport-jwt": "^4.0.1",
     "pg": "^8.13.1",
     "redis": "^4.7.0",
-    "tsconfig-paths": "^4.2.0"
+    "tsconfig-paths": "^4.2.0",
+    "uuid": "^11.1.0",
+    "ws": "^8.18.1"
   }
 }
